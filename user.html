@@ -1,0 +1,2764 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DawaDo – Your Medicine Partner</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <!-- Leaflet Map CSS/JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+      :root {
+        --primary: #10b981;
+        --primary-dark: #059669;
+        --secondary: #2563eb;
+        --background: #f8fafc;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --text-light: #64748b;
+        --border: #cbd5e1;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --success: #10b981;
+        --primary-light: #ecfdf5;
+        --secondary-light: #eff6ff;
+        --card-radius: 18px;
+        --font-display: 'Space Grotesk', sans-serif;
+        --font-sans: 'Inter', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: #0f172a; /* Slate background to fit Launchpad frames */
+        color: var(--text);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow-x: hidden;
+      }
+
+      /* Native Android-like Frame Container */
+      .app-container {
+        width: 100%;
+        max-width: 480px;
+        height: 100vh;
+        background: var(--background);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
+
+      @media (max-width: 480px) {
+        .app-container {
+          height: 100vh;
+          max-width: 100%;
+        }
+      }
+
+      /* Scrollbar Styling */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+
+      /* View Screens Management */
+      .screen-view {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        overflow-y: auto;
+        padding-bottom: 80px; /* Safe area for bottom nav */
+        animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .screen-view.active {
+        display: flex;
+      }
+
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Splash Screen View */
+      .splash-screen {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: opacity 0.5s ease-out;
+      }
+
+      .splash-logo {
+        background: rgba(255, 255, 255, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        width: 100px;
+        height: 100px;
+        border-radius: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        animation: pulseLogo 2s infinite ease-in-out;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      }
+
+      @keyframes pulseLogo {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+      }
+
+      .splash-title {
+        font-family: var(--font-display);
+        font-size: 2.2rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.25rem;
+      }
+
+      .splash-tagline {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        font-weight: 400;
+        margin-bottom: 3rem;
+      }
+
+      .splash-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 1.5rem;
+      }
+
+      .splash-status {
+        font-size: 0.75rem;
+        font-family: var(--font-mono);
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Premium Header */
+      .app-header {
+        background: var(--surface);
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .header-user {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .header-avatar {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.1rem;
+        border: 2px solid white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      }
+
+      .header-greeting {
+        font-size: 0.75rem;
+        color: var(--text-light);
+      }
+
+      .header-username {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .header-btn {
+        background: transparent;
+        border: none;
+        color: var(--text);
+        font-size: 1.25rem;
+        cursor: pointer;
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+
+      .header-btn:hover {
+        background: #f1f5f9;
+      }
+
+      .btn-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--surface);
+      }
+
+      /* Home Layout Components */
+      .location-card {
+        background: var(--surface);
+        margin: 0.75rem 1rem;
+        padding: 0.85rem 1rem;
+        border-radius: var(--card-radius);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .location-card:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+      }
+
+      .location-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .location-info i {
+        color: var(--primary-dark);
+        font-size: 1.2rem;
+      }
+
+      .location-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: var(--text-light);
+        letter-spacing: 0.05em;
+      }
+
+      .location-text {
+        font-size: 0.85rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Search Row */
+      .search-container {
+        padding: 0.25rem 1rem 0.75rem 1rem;
+      }
+
+      .search-box-wrapper {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        cursor: pointer;
+      }
+
+      .search-box-wrapper i {
+        color: var(--text-light);
+      }
+
+      .search-placeholder {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        flex: 1;
+      }
+
+      .search-shortcut-btn {
+        background: transparent;
+        border: none;
+        color: var(--primary-dark);
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 4px;
+      }
+
+      /* Carousel Banner Slider */
+      .banner-slider-container {
+        padding: 0 1rem;
+        margin-bottom: 1.25rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .banner-wrapper {
+        display: flex;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        border-radius: var(--card-radius);
+      }
+
+      .banner-slide {
+        min-width: 100%;
+        position: relative;
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        height: 130px;
+        display: flex;
+        align-items: center;
+        color: white;
+        padding: 1.5rem;
+        text-decoration: none;
+      }
+
+      .banner-slide img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 1;
+        opacity: 0.95;
+      }
+
+      .banner-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 100%);
+        z-index: 2;
+      }
+
+      .banner-content {
+        position: relative;
+        z-index: 3;
+        max-width: 70%;
+      }
+
+      .banner-badge {
+        background: var(--primary);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        display: inline-block;
+      }
+
+      .banner-title {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        font-weight: 600;
+        line-height: 1.2;
+        margin-bottom: 4px;
+      }
+
+      .banner-desc {
+        font-size: 0.75rem;
+        opacity: 0.85;
+      }
+
+      .banner-dots {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .banner-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        transition: all 0.3s;
+      }
+
+      .banner-dot.active {
+        background: var(--primary-dark);
+        width: 14px;
+        border-radius: 3px;
+      }
+
+      /* Quick Action Grid */
+      .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        padding: 0 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .quick-action-card {
+        background: var(--surface);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 16px;
+        padding: 10px 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+      }
+
+      .quick-action-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+        box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.08);
+      }
+
+      .quick-action-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+      }
+
+      .quick-action-card.prescription .quick-action-icon { background: #e0f2fe; color: #0284c7; }
+      .quick-action-card.emergency .quick-action-icon { background: #fee2e2; color: #dc2626; }
+      .quick-action-card.repeat .quick-action-icon { background: #fef3c7; color: #d97706; }
+      .quick-action-card.stores .quick-action-icon { background: #ecfdf5; color: #059669; }
+
+      .quick-action-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.2;
+      }
+
+      /* Sections Header */
+      .home-section {
+        margin-bottom: 1.5rem;
+      }
+
+      .section-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 1rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .section-heading {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .section-link {
+        color: var(--primary-dark);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      /* Horizontal Scrollable Row */
+      .horizontal-scroll-row {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 4px 1rem;
+      }
+
+      .horizontal-scroll-row::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* Flash Sale Badge style */
+      .flash-sale-badge {
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        color: white;
+        border-radius: var(--card-radius);
+        padding: 1rem;
+        margin: 0 1rem 1.25rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.15);
+      }
+
+      .flash-sale-info h4 {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .flash-sale-info p {
+        font-size: 0.75rem;
+        opacity: 0.9;
+        margin-top: 2px;
+      }
+
+      .countdown-timer-box {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .timer-digit {
+        background: rgba(0,0,0,0.3);
+        padding: 6px 8px;
+        border-radius: 8px;
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: white;
+        min-width: 32px;
+        text-align: center;
+      }
+
+      /* Medicine Card Grid Style */
+      .med-grid-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 0 1rem;
+      }
+
+      .med-item-card {
+        background: var(--surface);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+      }
+
+      .med-item-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+      }
+
+      .med-badge-discount {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 6px;
+        z-index: 10;
+      }
+
+      .med-badge-rx {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #fee2e2;
+        color: #ef4444;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 6px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .med-image-box {
+        height: 100px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .med-image-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .med-item-details {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+      }
+
+      .med-item-cat {
+        font-size: 0.65rem;
+        color: var(--text-light);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .med-item-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.3;
+        min-height: 36px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .med-item-price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 4px;
+      }
+
+      .med-item-price-wrapper {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .med-item-price-orig {
+        font-size: 0.7rem;
+        color: var(--text-light);
+        text-decoration: line-through;
+      }
+
+      .med-item-price {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+      }
+
+      .med-item-action-btn {
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        border: 1px solid #a7f3d0;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+      }
+
+      .med-item-action-btn:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      /* Quantity selector inside card */
+      .med-card-qty {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--primary-dark);
+        color: white;
+        border-radius: 10px;
+        padding: 2px 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .med-card-qty button {
+        background: transparent;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      .stock-bar-container {
+        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .stock-text {
+        font-size: 0.62rem;
+        color: var(--text-light);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .stock-progress-bar {
+        height: 4px;
+        background: #e2e8f0;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .stock-progress-fill {
+        height: 100%;
+        background: var(--warning);
+        border-radius: 2px;
+        width: 80%;
+      }
+
+      /* Premium Dialog & Overlays */
+      .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: none;
+        align-items: flex-end; /* Native Android bottom sheet style */
+        justify-content: center;
+        animation: fadeInOverlay 0.25s ease-out;
+      }
+
+      @keyframes fadeInOverlay {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .modal-sheet {
+        background: var(--surface);
+        width: 100%;
+        border-radius: 24px 24px 0 0;
+        padding: 1.5rem 1.25rem;
+        max-height: 85vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        box-shadow: 0 -15px 30px rgba(0,0,0,0.1);
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .modal-overlay.active .modal-sheet {
+        transform: translateY(0);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 10px;
+      }
+
+      .modal-title {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+      }
+
+      .modal-close-btn {
+        background: #f1f5f9;
+        border: none;
+        color: var(--text-light);
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      /* Category Scroll and Chip */
+      .category-banner-card {
+        background: var(--surface);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 16px;
+        padding: 10px;
+        width: 76px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+
+      .category-banner-card img {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+
+      .category-banner-card span {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        height: 24px;
+      }
+
+      .category-banner-card.active {
+        border-color: var(--primary);
+        background: var(--primary-light);
+      }
+
+      /* Forms Design */
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-group label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .form-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .form-input-wrapper i {
+        position: absolute;
+        left: 12px;
+        color: var(--text-light);
+        font-size: 0.95rem;
+      }
+
+      .form-control {
+        width: 100%;
+        border: 1px solid var(--border);
+        padding: 12px 12px 12px 38px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-family: var(--font-sans);
+        outline: none;
+        transition: all 0.2s;
+        background: var(--surface);
+      }
+
+      .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+      }
+
+      .btn-primary {
+        background: var(--primary-dark);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: background 0.2s;
+        width: 100%;
+      }
+
+      .btn-primary:hover {
+        background: #047857;
+      }
+
+      /* Notification Alerts */
+      .toast-notification {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        right: 20px;
+        background: #0f172a;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 10000;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        transform: translateY(-50px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        pointer-events: none;
+      }
+
+      .toast-notification.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      /* Android Bottom Bar */
+      .bottom-nav-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: var(--surface);
+        border-top: 1px solid rgba(226, 232, 240, 0.8);
+        display: none; /* Controlled via state */
+        justify-content: space-around;
+        align-items: center;
+        z-index: 999;
+        padding-bottom: 4px;
+      }
+
+      .bottom-nav-tab {
+        background: transparent;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: var(--text-light);
+        cursor: pointer;
+        flex: 1;
+        height: 100%;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .bottom-nav-tab i {
+        font-size: 1.2rem;
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .bottom-nav-tab span {
+        font-size: 0.65rem;
+        font-weight: 600;
+      }
+
+      .bottom-nav-tab.active {
+        color: var(--primary-dark);
+      }
+
+      .bottom-nav-tab.active i {
+        transform: translateY(-2px) scale(1.1);
+      }
+
+      .bottom-nav-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: 2px;
+        width: 16px;
+        height: 3px;
+        background: var(--primary-dark);
+        border-radius: 2px;
+      }
+
+      /* Password Strength Meter */
+      .password-strength-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 4px;
+      }
+
+      .password-strength-bars {
+        display: flex;
+        gap: 4px;
+      }
+
+      .password-strength-bar {
+        height: 4px;
+        flex: 1;
+        background: #e2e8f0;
+        border-radius: 2px;
+        transition: background 0.3s;
+      }
+
+      .password-strength-text {
+        font-size: 0.65rem;
+        font-weight: 500;
+        text-align: right;
+      }
+
+      /* Prescription Upload container styling */
+      .prescription-drop-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 2rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .prescription-drop-zone.active {
+        border-color: var(--primary);
+        background: var(--primary-light);
+      }
+
+      .prescription-preview-box {
+        margin-top: 12px;
+        width: 100%;
+        max-height: 160px;
+        border-radius: 12px;
+        overflow: hidden;
+        display: none;
+        position: relative;
+        border: 1px solid #cbd5e1;
+      }
+
+      .prescription-preview-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .prescription-delete-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      /* Nearby stores card */
+      .nearby-store-card {
+        background: var(--surface);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-width: 240px;
+        flex-shrink: 0;
+      }
+
+      .nearby-store-card:hover {
+        border-color: var(--secondary);
+      }
+
+      .nearby-store-logo {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        object-fit: cover;
+        background: #f1f5f9;
+      }
+
+      .nearby-store-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+      }
+
+      .nearby-store-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .nearby-store-meta {
+        font-size: 0.7rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .nearby-store-meta i {
+        font-size: 0.65rem;
+      }
+
+      .status-pill {
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        align-self: flex-start;
+      }
+
+      .status-pill.open { background: var(--primary-light); color: var(--primary-dark); }
+      .status-pill.closed { background: #fee2e2; color: #ef4444; }
+
+      /* Scratch Card Coupon game styles */
+      .scratch-container-box {
+        position: relative;
+        width: 280px;
+        height: 140px;
+        margin: 0 auto;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      }
+
+      .scratch-prize-bg {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        z-index: 1;
+      }
+
+      .scratch-prize-code {
+        font-family: var(--font-mono);
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--secondary);
+        letter-spacing: 0.05em;
+        margin-top: 4px;
+        background: white;
+        padding: 4px 14px;
+        border-radius: 8px;
+        border: 1.5px dashed var(--secondary);
+      }
+
+      .scratch-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        cursor: grab;
+      }
+
+      .scratch-canvas:active {
+        cursor: grabbing;
+      }
+
+      /* Voice Search & Mic effect styling */
+      .voice-listening-overlay {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        padding: 2rem 1rem;
+      }
+
+      .mic-ripple-circle {
+        width: 72px;
+        height: 72px;
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        position: relative;
+        animation: micPulse 1.5s infinite;
+      }
+
+      @keyframes micPulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+        70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      }
+
+      .voice-live-text {
+        font-style: italic;
+        color: var(--text-light);
+        font-size: 0.95rem;
+        text-align: center;
+        min-height: 24px;
+      }
+
+      /* Barcode scanning simulator overlay styles */
+      .barcode-scanner-box {
+        position: relative;
+        width: 100%;
+        height: 240px;
+        background: #000;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 2px solid #334155;
+      }
+
+      .barcode-camera-view {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.7;
+      }
+
+      .barcode-laser-line {
+        position: absolute;
+        top: 10%;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: #ef4444;
+        box-shadow: 0 0 8px #ef4444;
+        animation: laserScan 2s infinite ease-in-out;
+        z-index: 5;
+      }
+
+      @keyframes laserScan {
+        0%, 100% { top: 15%; }
+        50% { top: 85%; }
+      }
+
+      .barcode-target-bracket {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 180px;
+        height: 100px;
+        border: 2px dashed rgba(255,255,255,0.6);
+        border-radius: 8px;
+        z-index: 4;
+      }
+
+      /* Cart, Tracking and History style */
+      .bill-card-box {
+        background: var(--surface);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 16px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 0.82rem;
+      }
+
+      .bill-item-row {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-light);
+      }
+
+      .bill-total-row {
+        border-top: 1.5px dotted #e2e8f0;
+        padding-top: 8px;
+        margin-top: 4px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--text);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* Leaflet custom marker classes */
+      .leaflet-div-marker {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Offline Support banner style */
+      .offline-status-banner {
+        background: #ef4444;
+        color: white;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        text-align: center;
+        padding: 4px;
+        font-weight: 600;
+        display: none;
+        z-index: 1001;
+      }
+
+      /* List & Grid Catalog toggles styling */
+      .med-grid-layout.list-view {
+        grid-template-columns: 1fr !important;
+      }
+      .med-grid-layout.list-view .med-item-card {
+        flex-direction: row;
+        height: auto;
+        padding: 10px;
+        gap: 12px;
+        align-items: center;
+      }
+      .med-grid-layout.list-view .med-item-card .med-image-box {
+        width: 90px;
+        height: 90px;
+        flex-shrink: 0;
+        border-radius: 12px;
+      }
+      .med-grid-layout.list-view .med-item-card .med-item-details {
+        padding: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        min-width: 0;
+      }
+      
+      /* Details Modal interactive classes */
+      .details-tab-bar {
+        display: flex;
+        border-bottom: 1.5px solid var(--border);
+        margin-top: 15px;
+        gap: 16px;
+      }
+      .details-tab-btn {
+        background: transparent;
+        border: none;
+        padding: 8px 4px;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-light);
+        cursor: pointer;
+        position: relative;
+        outline: none;
+      }
+      .details-tab-btn.active {
+        color: var(--primary-dark);
+      }
+      .details-tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1.5px;
+        left: 0;
+        width: 100%;
+        height: 2.5px;
+        background: var(--primary-dark);
+        border-radius: 2px;
+      }
+      .details-tab-content {
+        display: none;
+        padding: 12px 0;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        color: var(--text);
+      }
+      .details-tab-content.active {
+        display: block;
+      }
+      
+      /* Image Gallery Swiper / Selector */
+      .gallery-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+      .gallery-main-img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 16px;
+        cursor: zoom-in;
+        transition: transform 0.3s ease;
+        border: 1px solid var(--border);
+      }
+      .gallery-thumb-row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+      .gallery-thumb {
+        width: 44px;
+        height: 44px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+      }
+      .gallery-thumb.active {
+        border-color: var(--primary-dark);
+      }
+
+      /* Multi-choice preset buttons */
+      .tag-btn-preset {
+        background: #f1f5f9;
+        color: var(--text-light);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        outline: none;
+      }
+      .tag-btn-preset.active {
+        background: var(--primary-dark);
+        color: white;
+        border-color: var(--primary-dark);
+      }
+
+      /* Segmented Orders Tabs and Modern Cards */
+      .orders-segment-tab {
+        background: #f1f5f9;
+        color: var(--text-light);
+        border: none;
+        border-radius: 9999px;
+        padding: 6px 14px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        outline: none;
+      }
+      .orders-segment-tab.active {
+        background: var(--primary-dark);
+        color: white;
+      }
+      
+      .order-card-enterprise {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+      }
+      
+      /* Profile actions grid and support records */
+      .profile-item-btn {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .profile-item-btn:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Applet View Container mimicking premium phone dimensions -->
+    <div class="app-container">
+      <!-- Connection Offline banner -->
+      <div id="offline-banner" class="offline-status-banner">
+        <i class="fa-solid fa-cloud-bolt-offline"></i> CONNECTION OFFLINE – FALLBACK SYNC READY
+      </div>
+
+      <!-- Realtime system toast -->
+      <div id="toast-bar" class="toast-notification">
+        <i class="fa-solid fa-circle-info" id="toast-icon"></i>
+        <span id="toast-text">System update ready.</span>
+      </div>
+
+      <!-- SPLASH SCREEN OVERLAY (BOOT SYSTEM) -->
+      <div id="splash-screen" class="splash-screen">
+        <div class="splash-logo">
+          <i class="fa-solid fa-prescription-bottle-medical"></i>
+        </div>
+        <h1 class="splash-title">DawaDo</h1>
+        <p class="splash-tagline">Your Medicine Partner</p>
+        <div class="splash-spinner"></div>
+        <p class="splash-status" id="splash-status-text">Booting Secure Auth Gateway...</p>
+      </div>
+
+      <!-- APP VIEW 1: AUTHENTICATION (LOGIN, SIGNUP, FORGOT PASS) -->
+      <div id="view-auth" class="screen-view active" style="padding-top: 3rem; justify-content: center;">
+        <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+          <div style="text-align: center; margin-bottom: 0.5rem;">
+            <i class="fa-solid fa-shield-heart" style="font-size: 3.5rem; color: var(--primary-dark); margin-bottom: 0.75rem;"></i>
+            <h2 style="font-family: var(--font-display); font-size: 1.75rem; font-weight: 700; color: var(--text);">DawaDo <span>Partner</span></h2>
+            <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 4px;">Premium HIPAA-Compliant Medicine Delivery</p>
+          </div>
+
+          <!-- Auth Screen Selection Tab -->
+          <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px;">
+            <button id="auth-tab-login" class="btn-primary" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; background: white; color: var(--primary-dark); border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" onclick="toggleAuthPanel('login')">Login</button>
+            <button id="auth-tab-signup" class="btn-primary" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; background: transparent; color: var(--text-light); border: none;" onclick="toggleAuthPanel('signup')">Create Account</button>
+          </div>
+
+          <!-- Login Input Panel -->
+          <form id="auth-form-login" onsubmit="handleUserLoginSubmit(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label>Email Address</label>
+              <div class="form-input-wrapper">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="login-email-input" class="form-control" placeholder="e.g. user@dawado.com" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Password</label>
+                <span style="font-size: 0.75rem; color: var(--secondary); cursor: pointer; font-weight: 600;" onclick="openForgotPasswordSheet()">Forgot Password?</span>
+              </div>
+              <div class="form-input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="login-pass-input" class="form-control" placeholder="Enter secure password" required />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">
+              Access Account <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </button>
+          </form>
+
+          <!-- Signup Input Panel -->
+          <form id="auth-form-signup" onsubmit="handleUserSignupSubmit(event)" style="display: none; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label>Full Name</label>
+              <div class="form-input-wrapper">
+                <i class="fa-solid fa-circle-user"></i>
+                <input type="text" id="signup-name-input" class="form-control" placeholder="Ananya Sharma" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Email Address</label>
+              <div class="form-input-wrapper">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="signup-email-input" class="form-control" placeholder="yourname@gmail.com" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <div class="form-input-wrapper">
+                <i class="fa-solid fa-phone"></i>
+                <input type="tel" id="signup-phone-input" class="form-control" placeholder="+91 XXXXX XXXXX" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Create Password</label>
+              <div class="form-input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="signup-pass-input" class="form-control" placeholder="Min. 6 alpha-numeric characters" oninput="assessPasswordStrength(this.value)" required />
+              </div>
+              <!-- Real-time Password strength indicator -->
+              <div class="password-strength-container" id="strength-widget" style="display: none;">
+                <div class="password-strength-bars">
+                  <div class="password-strength-bar" id="strength-bar-1"></div>
+                  <div class="password-strength-bar" id="strength-bar-2"></div>
+                  <div class="password-strength-bar" id="strength-bar-3"></div>
+                </div>
+                <div class="password-strength-text" id="strength-text" style="color: var(--danger);">Weak Password</div>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">
+              Register & Setup Profile <i class="fa-solid fa-user-plus"></i>
+            </button>
+          </form>
+
+          <!-- Credentials Guide Panel for fast Testing -->
+          <div style="background: var(--primary-light); border: 1.5px dashed rgba(16, 185, 129, 0.4); border-radius: 14px; padding: 10px 14px; margin-top: 1rem; cursor: pointer;" onclick="autoFillTestCredentials()">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--primary-dark); font-size: 0.78rem;">
+              <i class="fa-solid fa-bolt"></i> Enterprise Launch Shortcut
+            </div>
+            <p style="font-size: 0.72rem; color: #047857; margin-top: 2px; font-family: var(--font-sans);">Click here to automatically pre-fill developer testing credentials (<strong>user@dawado.com / user123</strong>).</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- APP VIEW 2: HOME DASHBOARD VIEW -->
+      <div id="view-home" class="screen-view">
+        <!-- Personalized Dynamic Top Bar -->
+        <header class="app-header">
+          <div class="header-user">
+            <div class="header-avatar" id="header-avatar-initial">U</div>
+            <div>
+              <div class="header-greeting" id="header-welcome-text">Welcome back,</div>
+              <div class="header-username" id="header-username-display">DawaDo User</div>
+            </div>
+          </div>
+          <div class="header-actions">
+            <!-- Patient Wishlist -->
+            <button class="header-btn" onclick="toggleWishlistModal(true)" title="My Wishlist">
+              <i class="fa-regular fa-heart" style="color: var(--danger);"></i>
+              <span class="btn-badge" id="header-wishlist-badge" style="display: none; background: var(--danger);">0</span>
+            </button>
+            <!-- Push Notifications Badge -->
+            <button class="header-btn" onclick="toggleNotificationPanel(true)">
+              <i class="fa-regular fa-bell"></i>
+              <span class="btn-badge" id="header-notif-badge" style="display: none;">0</span>
+            </button>
+            <!-- Direct Cart Badge Access -->
+            <button class="header-btn" onclick="navigateToTab('cart')">
+              <i class="fa-solid fa-shopping-basket"></i>
+              <span class="btn-badge" id="header-cart-badge" style="display: none;">0</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Location address card -->
+        <div class="location-card" onclick="openAddressManagementModal()">
+          <div class="location-info">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <div>
+              <div class="location-label" id="current-location-tag">Delivering to Home</div>
+              <div class="location-text" id="current-location-string">Selecting precise address coordinates...</div>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color: var(--text-light); font-size: 0.8rem;"></i>
+        </div>
+
+        <!-- Catalog Search Bar with simulated voice/barcode overlays -->
+        <div class="search-container">
+          <div class="search-box-wrapper" onclick="openGlobalSearchPane()">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <div class="search-placeholder">Search medicines, categories, generic substitutes...</div>
+            <button class="search-shortcut-btn" title="Voice Search" onclick="event.stopPropagation(); openVoiceSearchModal();">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button class="search-shortcut-btn" title="Barcode Scanner" onclick="event.stopPropagation(); openBarcodeScannerModal();">
+              <i class="fa-solid fa-barcode"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Banner campaigns slider -->
+        <div class="banner-slider-container">
+          <div class="banner-wrapper" id="banner-slide-wrapper">
+            <!-- Dynamic Campaign Slides -->
+            <div class="banner-slide">
+              <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=80" alt="Banner" />
+              <div class="banner-overlay"></div>
+              <div class="banner-content">
+                <span class="banner-badge">PRESCRIPTION</span>
+                <h3 class="banner-title">Upload Doctor Prescription</h3>
+                <p class="banner-desc">Get verified drugs dispatched instantly from approved pharmacies.</p>
+              </div>
+            </div>
+          </div>
+          <div class="banner-dots" id="banner-indicators">
+            <div class="banner-dot active"></div>
+          </div>
+        </div>
+
+        <!-- Quick Action Grid -->
+        <div class="quick-actions-grid">
+          <div class="quick-action-card prescription" onclick="openPrescriptionUploadModal()">
+            <div class="quick-action-icon"><i class="fa-solid fa-file-prescription"></i></div>
+            <div class="quick-action-label">Upload Rx</div>
+          </div>
+          <div class="quick-action-card emergency" onclick="filterEmergencyMedicines()">
+            <div class="quick-action-icon"><i class="fa-solid fa-truck-medical"></i></div>
+            <div class="quick-action-label">Emergency</div>
+          </div>
+          <div class="quick-action-card repeat" onclick="recreateLastOrderedCart()">
+            <div class="quick-action-icon"><i class="fa-solid fa-rotate-right"></i></div>
+            <div class="quick-action-label">Reorder</div>
+          </div>
+          <div class="quick-action-card stores" onclick="openNearbyPharmacySheet()">
+            <div class="quick-action-icon"><i class="fa-solid fa-clinic-medical"></i></div>
+            <div class="quick-action-label">Nearby Hubs</div>
+          </div>
+        </div>
+
+        <!-- Limited Countdown Flash Sale Section -->
+        <div class="flash-sale-badge" id="flash-sale-banner">
+          <div class="flash-sale-info">
+            <h4><i class="fa-solid fa-bolt" style="color: var(--warning);"></i> Limited Flash Sale</h4>
+            <p>Save up to 40% on essentials</p>
+          </div>
+          <div class="countdown-timer-box" id="flash-countdown">
+            <div class="timer-digit" id="timer-hr">02</div>
+            <span style="color: white; font-weight:700;">:</span>
+            <div class="timer-digit" id="timer-min">14</div>
+            <span style="color: white; font-weight:700;">:</span>
+            <div class="timer-digit" id="timer-sec">45</div>
+          </div>
+        </div>
+
+        <!-- Horizontal scrollable categories -->
+        <div class="home-section">
+          <div class="section-row">
+            <h3 class="section-heading">Browse Categories</h3>
+            <span class="section-link" onclick="navigateToTab('categories')">View All</span>
+          </div>
+          <div class="horizontal-scroll-row" id="home-categories-wrapper">
+            <!-- Populated via Javascript -->
+          </div>
+        </div>
+
+        <!-- Flash Sale items listing -->
+        <div class="home-section" id="flash-sale-items-section">
+          <div class="section-row">
+            <h3 class="section-heading">Flash Deals</h3>
+            <span style="color: var(--danger); font-size: 0.72rem; font-weight: 700; font-family: var(--font-mono);"><i class="fa-solid fa-fire"></i> BURNING OUT</span>
+          </div>
+          <div class="horizontal-scroll-row" id="flash-products-wrapper">
+            <!-- Populated with progress-bar stock cards -->
+          </div>
+        </div>
+
+        <!-- Best Sellers Grid -->
+        <div class="home-section">
+          <div class="section-row">
+            <h3 class="section-heading">Popular Medicines</h3>
+            <span class="section-link" onclick="navigateToTab('categories')">View Catalog</span>
+          </div>
+          <div class="med-grid-layout" id="home-bestsellers-wrapper">
+            <!-- Grid item medicine cards -->
+          </div>
+        </div>
+
+        <!-- Recommended products section -->
+        <div class="home-section" id="recommended-items-section" style="display: none;">
+          <div class="section-row">
+            <h3 class="section-heading">Tailored For You</h3>
+            <span style="font-size:0.75rem; color: var(--text-light);">Based on your interests</span>
+          </div>
+          <div class="horizontal-scroll-row" id="recommended-products-wrapper">
+            <!-- Horizontally scrolling customized recommendations -->
+          </div>
+        </div>
+
+        <!-- Daily Health Tips and Awareness educational cards -->
+        <div class="home-section">
+          <div class="section-row">
+            <h3 class="section-heading">Daily Health Tips</h3>
+          </div>
+          <div class="horizontal-scroll-row" id="home-health-tips-wrapper">
+            <!-- Admin controlled cards, click to expand -->
+          </div>
+        </div>
+      </div>
+
+      <!-- APP VIEW 3: CATEGORIES / SEARCH CATALOG FILTER SCREEN -->
+      <div id="view-categories" class="screen-view">
+        <header class="app-header">
+          <div class="section-title" style="font-family: var(--font-display); font-weight: 700; font-size: 1.2rem;">
+            <i class="fa-solid fa-mortar-pestle" style="color: var(--primary);"></i> Health Catalog
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="header-btn" onclick="openGlobalSearchPane()"><i class="fa-solid fa-magnifying-glass"></i></button>
+          </div>
+        </header>
+
+        <!-- Dynamic Filter Row -->
+        <div class="horizontal-scroll-row" id="catalog-category-filter-row" style="background: white; padding: 10px 1rem; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 80;">
+          <!-- Category chip filters populated by Javascript -->
+        </div>
+
+        <!-- Sorting & Search summary info bar with Layout & Filter triggers -->
+        <div style="padding: 10px 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-light); border-bottom: 1px solid #f1f5f9; background: #fafbfc;">
+          <span id="catalog-result-count" style="font-weight: 600;">Showing all medicines</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <!-- Layout toggle -->
+            <button id="catalog-layout-toggle" style="background: transparent; border: none; color: var(--text-light); cursor: pointer; font-size: 0.95rem; padding: 4px; display: flex; align-items: center; outline: none;" onclick="toggleCatalogLayout()" title="Toggle List/Grid View">
+              <i class="fa-solid fa-list-ul" id="layout-toggle-icon"></i>
+            </button>
+            
+            <!-- Filter button -->
+            <button id="catalog-filter-btn" style="background: var(--primary-light); border: none; color: var(--primary-dark); cursor: pointer; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: flex; align-items: center; gap: 4px; outline: none;" onclick="toggleFilterModal(true)" title="Filters">
+              <i class="fa-solid fa-sliders"></i> Filters
+            </button>
+
+            <!-- Sort Select -->
+            <div style="display: flex; align-items: center; gap: 2px;">
+              <i class="fa-solid fa-arrow-down-up-wide" style="font-size: 0.72rem; color: var(--text-light);"></i>
+              <select id="catalog-sort-select" style="border: none; background: transparent; font-size: 0.78rem; color: var(--text); font-weight: 600; outline: none; cursor: pointer;" onchange="handleCatalogSort(this.value)">
+                <option value="popularity">Popularity</option>
+                <option value="bestselling">Best Selling</option>
+                <option value="price-low-high">Price: L -> H</option>
+                <option value="price-high-low">Price: H -> L</option>
+                <option value="discount">Discount</option>
+                <option value="rating">Rating</option>
+                <option value="nearest">Nearest</option>
+                <option value="fastest">Fastest</option>
+                <option value="recent">Recent</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catalog items grid with skeleton loaders -->
+        <div class="med-grid-layout" id="catalog-items-grid" style="padding-bottom: 1.5rem;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- APP VIEW 4: OFFERS & SCRATCH CARD GAMES SCREEN -->
+      <div id="view-offers" class="screen-view">
+        <header class="app-header">
+          <div class="section-title" style="font-family: var(--font-display); font-weight: 700; font-size: 1.2rem;">
+            <i class="fa-solid fa-tags" style="color: var(--warning);"></i> Active Offers & Deals
+          </div>
+        </header>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          
+          <!-- Premium Scratch Card Interactive Game -->
+          <div style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; border-radius: var(--card-radius); padding: 1.25rem; text-align: center; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);">
+            <h4 style="font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; margin-bottom: 4px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Loyalty Coupon Scratch</h4>
+            <p style="font-size: 0.75rem; opacity: 0.9; margin-bottom: 1rem;">Rub or click to reveal your random checkout promo code!</p>
+            
+            <!-- Scratch card arena -->
+            <div class="scratch-container-box">
+              <!-- Underneath background with promo code -->
+              <div class="scratch-prize-bg">
+                <span style="font-size: 0.7rem; font-weight: 600; color: var(--text-light); text-transform: uppercase;">YOUR REVEALED CODE</span>
+                <div class="scratch-prize-code" id="scratch-code-display">DAWADO75</div>
+                <span style="font-size: 0.65rem; color: var(--primary-dark); font-weight: 600; margin-top: 4px;">Click code to copy (₹75 Off)</span>
+              </div>
+              <!-- Silver Scratch Canvas Overlay -->
+              <canvas class="scratch-canvas" id="scratch-canvas-node" width="280" height="140"></canvas>
+            </div>
+            
+            <button class="btn-primary" style="background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.4); margin-top: 1rem; font-size:0.8rem; padding: 8px;" onclick="resetScratchCouponGame()">
+              Reset Scratch Card <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+          </div>
+
+          <!-- Promo Code Cards list -->
+          <h4 style="font-family: var(--font-display); font-weight: 700; font-size: 1rem; margin-top: 0.5rem; color: var(--text);"><i class="fa-solid fa-ticket-simple"></i> Copyable Promo Coupons</h4>
+          <div style="display: flex; flex-direction: column; gap: 10px;" id="coupons-listing-wrapper">
+            <!-- Populated coupons -->
+          </div>
+        </div>
+      </div>
+
+      <!-- APP VIEW 5: CART SUMMARY & CHECKOUT VIEW -->
+      <div id="view-cart" class="screen-view">
+        <header class="app-header">
+          <div class="section-title" style="font-family: var(--font-display); font-weight: 700; font-size: 1.2rem;">
+            <i class="fa-solid fa-cart-flatbed-suitcase" style="color: var(--secondary);"></i> Your Medical Cart
+          </div>
+          <span id="cart-item-count-badge" style="font-size: 0.78rem; font-weight: 700; background: var(--secondary-light); color: var(--secondary); padding: 4px 10px; border-radius: 12px; font-family: var(--font-mono);">0 ITEMS</span>
+        </header>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Cart items list wrapper -->
+          <div id="cart-items-wrapper" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Rendered cart items -->
+          </div>
+
+          <!-- Interactive Checkout Block -->
+          <div id="cart-checkout-block" style="display: none; flex-direction: column; gap: 1.25rem;">
+            <!-- Bill details card -->
+            <div class="bill-card-box">
+              <div class="bill-item-row">
+                <span>Items Subtotal</span>
+                <span id="bill-subtotal-val">₹0.00</span>
+              </div>
+              <div class="bill-item-row">
+                <span>Delivery Logistics</span>
+                <span id="bill-delivery-val">₹30.00</span>
+              </div>
+              <div class="bill-item-row">
+                <span>Healthcare Cess Tax (5%)</span>
+                <span id="bill-tax-val">₹0.00</span>
+              </div>
+              <div class="bill-item-row" id="bill-discount-row" style="display: none; color: var(--primary-dark); font-weight: 600;">
+                <span>Promo Code Discount Applied</span>
+                <span id="bill-discount-val">-₹0.00</span>
+              </div>
+              <div class="bill-item-row bill-total-row">
+                <span>Grand Settle Amount</span>
+                <span id="bill-grand-val" style="color: var(--primary-dark);">₹0.00</span>
+              </div>
+            </div>
+
+            <!-- Promo Code input box -->
+            <div class="form-group">
+              <label>Promo Code / Coupon</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="cart-coupon-input" class="form-control" style="padding: 8px 12px; font-family: var(--font-mono); font-size: 0.85rem; text-transform: uppercase;" placeholder="Enter Promo Code" />
+                <button class="btn-primary" style="width: auto; padding: 0 16px; font-size: 0.82rem;" onclick="applyPromoCouponToCart()">Apply</button>
+              </div>
+              <span id="coupon-feedback-message" style="font-size: 0.72rem; display: none;"></span>
+            </div>
+
+            <!-- Payment gateway mode -->
+            <div class="form-group">
+              <label>Choose Payment Gateway Option</label>
+              <div style="display: flex; gap: 10px;">
+                <label style="flex: 1; border: 1.5px solid var(--primary); background: var(--primary-light); padding: 12px 10px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;" id="payment-mode-cod-label">
+                  <input type="radio" name="payment_mode_radio" value="COD" checked onclick="togglePaymentModeSelection('COD')" />
+                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--text);">COD (Cash)</span>
+                </label>
+                <label style="flex: 1; border: 1.5px solid var(--border); padding: 12px 10px; border-radius: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;" id="payment-mode-online-label">
+                  <input type="radio" name="payment_mode_radio" value="ONLINE" onclick="togglePaymentModeSelection('ONLINE')" />
+                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--text);">Razorpay / UPI</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Proceed Button -->
+            <button class="btn-primary" style="margin-top: 0.5rem;" onclick="triggerCheckoutSubmission()">
+              Dispatch Delivery Logistics <i class="fa-solid fa-angles-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- APP VIEW 6: ORDERS & LIVE DELIVERY TRACKING DASHBOARD -->
+      <div id="view-orders" class="screen-view">
+        <header class="app-header">
+          <div class="section-title" style="font-family: var(--font-display); font-weight: 700; font-size: 1.2rem;">
+            <i class="fa-solid fa-box-open" style="color: var(--primary-dark);"></i> Your Orders
+          </div>
+          <button class="header-btn" onclick="pullToRefreshOrders()" title="Pull to Refresh"><i class="fa-solid fa-rotate"></i></button>
+        </header>
+
+        <!-- Segmented Tab Row supporting 5 options -->
+        <div style="display: flex; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 80; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 10px 12px; gap: 8px; align-items: center; justify-content: flex-start; scrollbar-width: none;">
+          <button id="orders-tab-all" class="orders-segment-tab active" onclick="setOrdersSegmentTab('all')">All Orders</button>
+          <button id="orders-tab-active" class="orders-segment-tab" onclick="setOrdersSegmentTab('active')">Active</button>
+          <button id="orders-tab-delivered" class="orders-segment-tab" onclick="setOrdersSegmentTab('delivered')">Delivered</button>
+          <button id="orders-tab-cancelled" class="orders-segment-tab" onclick="setOrdersSegmentTab('cancelled')">Cancelled</button>
+          <button id="orders-tab-prescription" class="orders-segment-tab" onclick="setOrdersSegmentTab('prescription')">Prescription Orders</button>
+        </div>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 12px; padding-bottom: 90px;" id="orders-list-wrapper">
+          <!-- Populated by JS. Supports infinite scroll and pull to refresh -->
+        </div>
+      </div>
+
+      <!-- APP VIEW 7: USER HEALTH PROFILE & EDIT SCREEN -->
+      <div id="view-profile" class="screen-view">
+        <header class="app-header">
+          <div class="section-title" style="font-family: var(--font-display); font-weight: 700; font-size: 1.2rem;">
+            <i class="fa-solid fa-address-card" style="color: var(--secondary);"></i> Your Profile
+          </div>
+          <button class="header-btn" title="Sign Out" onclick="triggerUserLogOut()" style="color: var(--danger);"><i class="fa-solid fa-power-off"></i></button>
+        </header>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          
+          <!-- Large profile presentation card -->
+          <div style="background: white; border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem 1rem; text-align: center; position: relative;">
+            <div class="header-avatar" id="profile-avatar-node" style="width: 72px; height: 72px; font-size: 2.2rem; margin: 0 auto 12px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 3px solid white;">U</div>
+            <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; color: var(--text);" id="profile-name-text">Ananya Sharma</h3>
+            <p style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-light); margin-top: 2px;" id="profile-email-text">user@dawado.com</p>
+            <p style="font-size: 0.8rem; font-weight: 600; color: var(--primary-dark); margin-top: 6px;" id="profile-phone-text">+91 91234 56789</p>
+          </div>
+
+          <!-- Edit Profile Details Form -->
+          <div style="background: white; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 20px; padding: 1.25rem 1rem;">
+            <h4 style="font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; margin-bottom: 1rem; color: var(--text);"><i class="fa-solid fa-user-pen"></i> Update Personal Records</h4>
+            <form onsubmit="handleProfileDetailsUpdate(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+              <div class="form-group">
+                <label>Update Display Name</label>
+                <div class="form-input-wrapper">
+                  <i class="fa-solid fa-circle-user"></i>
+                  <input type="text" id="profile-edit-name" class="form-control" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Update Phone Number</label>
+                <div class="form-input-wrapper">
+                  <i class="fa-solid fa-phone"></i>
+                  <input type="tel" id="profile-edit-phone" class="form-control" required />
+                </div>
+              </div>
+              <button type="submit" class="btn-primary">
+                Save Personal Record <i class="fa-solid fa-file-shield"></i>
+              </button>
+            </form>
+          </div>
+
+          <!-- Manage Pinned Locations list -->
+          <div style="background: white; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 20px; padding: 1.25rem 1rem;">
+            <h4 style="font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--text);"><i class="fa-solid fa-folder-open"></i> Managed Delivery Pins</h4>
+            <div id="saved-address-pins-list" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Address items -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- BOTTOM TAB NAVIGATION - 5 ANCHORS AS MANDATED -->
+      <nav class="bottom-nav-bar" id="app-bottom-nav">
+        <button class="bottom-nav-tab active" id="tab-btn-home" onclick="navigateToTab('home')">
+          <i class="fa-solid fa-house-medical"></i>
+          <span>Home</span>
+        </button>
+        <button class="bottom-nav-tab" id="tab-btn-categories" onclick="navigateToTab('categories')">
+          <i class="fa-solid fa-mortar-pestle"></i>
+          <span>Categories</span>
+        </button>
+        <button class="bottom-nav-tab" id="tab-btn-orders" onclick="navigateToTab('orders')">
+          <i class="fa-solid fa-route"></i>
+          <span>Orders</span>
+        </button>
+        <button class="bottom-nav-tab" id="tab-btn-offers" onclick="navigateToTab('offers')">
+          <i class="fa-solid fa-tags"></i>
+          <span>Offers</span>
+        </button>
+        <button class="bottom-nav-tab" id="tab-btn-profile" onclick="navigateToTab('profile')">
+          <i class="fa-solid fa-address-card"></i>
+          <span>Profile</span>
+        </button>
+      </nav>
+
+      <!-- ================= MODALS & SLIDE-UP SHEETS ================= -->
+
+      <!-- 1. LOCATION PINPOINT & REVERSE GEOCODING SHEET -->
+      <div class="modal-overlay" id="location-modal">
+        <div class="modal-sheet">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-location-crosshairs"></i> Select Delivery Pin</div>
+            <button class="modal-close-btn" onclick="toggleLocationModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Address Search with instant Nominatim results -->
+            <div class="form-group" style="position: relative;">
+              <label>Search Address / Landmark</label>
+              <div class="form-input-wrapper">
+                <i class="fa-solid fa-magnifying-glass-location"></i>
+                <input type="text" id="modal-address-search-input" class="form-control" placeholder="Type location area (e.g. Indiranagar)" oninput="handleAddressManualQuery(this.value)" />
+              </div>
+              <!-- Instant Search dropdown suggestions list -->
+              <div id="modal-address-suggestions-box" style="display: none; position: absolute; left: 0; right: 0; top: 100%; background: white; border: 1px solid var(--border); border-radius: 12px; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                <!-- Dynamically added option rows -->
+              </div>
+            </div>
+
+            <!-- Auto detect location button -->
+            <button class="btn-primary" style="background: var(--secondary-light); color: var(--secondary); border: 1.5px solid #bfdbfe; font-size: 0.85rem;" onclick="triggerGPSAutoDetect()">
+              <i class="fa-solid fa-location-arrow"></i> Detect Location via GPS Geolocation
+            </button>
+
+            <!-- Map frame -->
+            <div id="modal-leaflet-selector-map" style="width: 100%; height: 200px; background: #e2e8f0; border-radius: 16px; border: 1px solid var(--border);"></div>
+
+            <!-- Geocoded address display -->
+            <div class="form-group">
+              <label>Reverse Geocoded Address Location</label>
+              <input type="text" id="modal-reverse-address-result" class="form-control" style="padding-left: 12px; font-size: 0.82rem; background: #f8fafc;" readonly />
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="modal-flat-input" placeholder="Flat / House / Building" class="form-control" style="padding-left: 12px; font-size: 0.85rem;" />
+              <input type="text" id="modal-landmark-input" placeholder="Nearby Landmark (Optional)" class="form-control" style="padding-left: 12px; font-size: 0.85rem;" />
+            </div>
+
+            <!-- Address presets tag selector -->
+            <div class="form-group">
+              <label>Address Label Tag</label>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-primary" id="tag-btn-home" style="flex:1; padding: 8px; font-size: 0.78rem; background: var(--primary-dark);" onclick="selectAddressPresetTag('Home')">Home</button>
+                <button class="btn-primary" id="tag-btn-work" style="flex:1; padding: 8px; font-size: 0.78rem; background: #f1f5f9; color: var(--text-light); border: 1px solid var(--border);" onclick="selectAddressPresetTag('Work')">Work</button>
+                <button class="btn-primary" id="tag-btn-other" style="flex:1; padding: 8px; font-size: 0.78rem; background: #f1f5f9; color: var(--text-light); border: 1px solid var(--border);" onclick="selectAddressPresetTag('Other')">Other</button>
+              </div>
+            </div>
+
+            <!-- Save button -->
+            <button class="btn-primary" onclick="handleConfirmAddressSelectionSubmit()">
+              Save & Confirm Delivery Pin <i class="fa-solid fa-circle-check"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. GLOBAL MEDICINE DIRECT SEARCH SLIDE-UP OVERLAY -->
+      <div class="modal-overlay" id="search-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-magnifying-glass"></i> Explore Health Library</div>
+            <button class="modal-close-btn" onclick="toggleSearchModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <!-- Full search header input -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="form-input-wrapper">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="global-search-input-field" class="form-control" placeholder="Search brands, generics, categories, wellness..." oninput="handleInstantCatalogQuery(this.value)" />
+            </div>
+            
+            <!-- Quick tags and alternates layout -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Generic substitute helper banner -->
+              <div id="generic-substitute-helper-banner" style="display: none; background: #fffbeb; border: 1.5px dashed #fcd34d; border-radius: 12px; padding: 10px;">
+                <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #b45309; font-size: 0.78rem;">
+                  <i class="fa-solid fa-hand-holding-medical"></i> Smart Generic Alternate Suggestion
+                </div>
+                <p style="font-size: 0.72rem; color: #92400e; margin-top: 2px;" id="generic-helper-text">You can save up to 60% with generic alternates.</p>
+                <!-- Clickable alternate drug suggestions -->
+                <div id="generic-suggestions-row" style="display: flex; gap: 8px; margin-top: 6px;"></div>
+              </div>
+
+              <!-- Popular searches chips -->
+              <div id="popular-searches-row" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span style="font-size: 0.72rem; color: var(--text-light); font-weight: 600;">Popular:</span>
+                <span style="background: #f1f5f9; font-size: 0.72rem; padding: 4px 10px; border-radius: 12px; cursor: pointer; font-weight:500;" onclick="preFillSearchKeyword('Paracetamol')">Paracetamol</span>
+                <span style="background: #f1f5f9; font-size: 0.72rem; padding: 4px 10px; border-radius: 12px; cursor: pointer; font-weight:500;" onclick="preFillSearchKeyword('Vitamin C')">Vitamin C</span>
+                <span style="background: #f1f5f9; font-size: 0.72rem; padding: 4px 10px; border-radius: 12px; cursor: pointer; font-weight:500;" onclick="preFillSearchKeyword('Cetirizine')">Cetirizine</span>
+              </div>
+
+              <!-- Search History tag -->
+              <div id="search-history-row" style="display: none; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span style="font-size: 0.72rem; color: var(--text-light); font-weight: 600;">Recent:</span>
+                <!-- Rendered history tags -->
+              </div>
+            </div>
+
+            <!-- Scrollable Search results list -->
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 250px;" id="global-search-results-list">
+              <!-- Initial state -->
+              <div style="text-align: center; padding: 3rem 1rem; color: var(--text-light);">
+                <i class="fa-solid fa-comment-medical" style="font-size: 2.5rem; opacity: 0.3; margin-bottom: 10px;"></i>
+                <p style="font-size: 0.8rem;">Start typing to match FDA-approved medical supplies...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SIMULATED VOICE SPEECH WORKSPACE -->
+      <div class="modal-overlay" id="voice-modal">
+        <div class="modal-sheet">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-microphone-lines"></i> Speech Recognizer</div>
+            <button class="modal-close-btn" onclick="toggleVoiceModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div class="voice-listening-overlay">
+            <div class="mic-ripple-circle">
+              <i class="fa-solid fa-microphone"></i>
+            </div>
+            <div>
+              <p style="text-align: center; font-weight: 600; font-size: 0.95rem;" id="voice-mic-status">Listening to speech...</p>
+              <p class="voice-live-text" id="voice-recognized-query">"Find Paracetamol tablets 650mg..."</p>
+            </div>
+            <button class="btn-primary" style="background: var(--danger);" onclick="toggleVoiceModal(false)">Cancel Speech</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. SIMULATED LASER BARCODE SCANNER SHEETS -->
+      <div class="modal-overlay" id="barcode-modal">
+        <div class="modal-sheet">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-camera-retro"></i> Medicine Laser Scanner</div>
+            <button class="modal-close-btn" onclick="toggleBarcodeModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-size: 0.78rem; color: var(--text-light); text-align: center; line-height: 1.4;">Aim camera overlay squarely at medicine box or retail container barcode.</p>
+            
+            <div class="barcode-scanner-box">
+              <img src="https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=400&q=80" class="barcode-camera-view" alt="Camera view" />
+              <div class="barcode-laser-line"></div>
+              <div class="barcode-target-bracket"></div>
+            </div>
+
+            <!-- Dropdown selector of simulated barcodes -->
+            <div class="form-group">
+              <label>Select Simulated Barcode Scan target</label>
+              <select id="barcode-mock-select" class="form-control" style="padding-left: 12px; font-size: 0.85rem;" onchange="handleSimulatedBarcodeScan(this.value)">
+                <option value="">-- Align barcode to begin scanning --</option>
+                <option value="med_1">Scan: Paracetamol 650mg (Success)</option>
+                <option value="med_2">Scan: Amoxicillin 500mg (Prescription Needed)</option>
+                <option value="med_4">Scan: Metformin (Chronic Care)</option>
+                <option value="invalid_barcode">Scan: Unregistered Drug (Helpful Warning)</option>
+              </select>
+            </div>
+
+            <button class="btn-primary" style="background: #334155;" onclick="toggleBarcodeModal(false)">Close Camera</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. PRESCRIPTION UPLOAD & DIGITAL ORDER SHEET -->
+      <div class="modal-overlay" id="prescription-modal">
+        <div class="modal-sheet">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-file-prescription"></i> Digital Rx Upload Gateway</div>
+            <button class="modal-close-btn" onclick="togglePrescriptionModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-size: 0.78rem; color: var(--text-light); line-height: 1.4;">HIPAA secure platform. Uploaded doctor files are verified instantly by licensed pharmacists.</p>
+            
+            <!-- Real visual file uploader supporting drag/drop & click -->
+            <div class="prescription-drop-zone" id="rx-drop-zone" onclick="triggerRxFileSelection()">
+              <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.2rem; color: var(--primary-dark);"></i>
+              <div>
+                <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--text);">Drag and Drop Prescription</h5>
+                <p style="font-size: 0.72rem; color: var(--text-light); margin-top: 2px;">Accepts JPEG, PNG, or PDF files (Max 5MB)</p>
+              </div>
+              <!-- Hidden input anchor -->
+              <input type="file" id="rx-hidden-file-input" style="display: none;" accept="image/*,application/pdf" onchange="handleRxFileSelectionSelected(event)" />
+            </div>
+
+            <!-- Upload thumbnail preview box -->
+            <div class="prescription-preview-box" id="rx-thumbnail-preview">
+              <!-- Thumbnail loaded via Javascript FileReader -->
+              <img id="rx-thumbnail-img" src="" alt="Thumbnail preview" />
+              <button class="prescription-delete-btn" onclick="removeSelectedRxFile(event)"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+
+            <div class="form-group">
+              <label>Special Instructions for Pharmacist</label>
+              <textarea id="rx-pharmacist-notes" class="form-control" style="padding-left: 12px; height: 60px; resize: none; font-size: 0.85rem;" placeholder="e.g. Dispense generic brands only..."></textarea>
+            </div>
+
+            <!-- Simulated Cloudinary status block -->
+            <div id="rx-cloudinary-status-badge" style="display: none; background: var(--secondary-light); padding: 8px 12px; border-radius: 12px; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--secondary);">
+              <i class="fa-solid fa-circle-check"></i> Connected secure simulated Cloudinary ID: <strong id="rx-cloudinary-id-txt">cloudinary_mock_xyz</strong>
+            </div>
+
+            <button class="btn-primary" onclick="submitRxPrescriptionOrder()">
+              Submit Prescription Order <i class="fa-solid fa-prescription-bottle-medical"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. PUSH ALERTS NOTIFICATION CENTER PANEL -->
+      <div class="modal-overlay" id="notifications-modal">
+        <div class="modal-sheet" style="height: 80vh; max-height: 80vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-bell"></i> HIPAA Notification Center</div>
+            <button class="modal-close-btn" onclick="toggleNotificationPanel(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; flex: 1; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span id="notif-count-text" style="font-size: 0.78rem; color: var(--text-light); font-weight:600;">0 Unread Messages</span>
+              <button class="btn-primary" style="background: transparent; color: var(--primary-dark); border: none; font-size: 0.75rem; width: auto; padding: 0 4px;" onclick="triggerMarkAllNotificationsAsRead()">Mark All Read</button>
+            </div>
+
+            <!-- Scrollable list -->
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;" id="notifications-wrapper-list">
+              <!-- Rendered items -->
+            </div>
+          </div>
+        </div>
+      <!-- 7. MEDICINE DETAILS DETAILED INSPECTION MODAL -->
+      <div class="modal-overlay" id="details-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh; display: flex; flex-direction: column;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-prescription-bottle-medical" style="color: var(--primary-dark);"></i> Medicine Specification</div>
+            <button class="modal-close-btn" onclick="toggleDetailsModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 12px;" id="details-modal-content-area">
+            <!-- Populated dynamically via JS -->
+          </div>
+          
+          <div style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 10px; align-items: center; background: white;" id="details-modal-action-row">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. PATIENT FAVOURITES HEALTH WISHLIST MODAL -->
+      <div class="modal-overlay" id="wishlist-modal">
+        <div class="modal-sheet" style="height: 80vh; max-height: 80vh; display: flex; flex-direction: column;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-heart" style="color: var(--danger);"></i> Health Wishlist</div>
+            <button class="modal-close-btn" onclick="toggleWishlistModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <p style="font-size: 0.75rem; color: var(--text-light); line-height: 1.3; margin-bottom: 8px;">Keep track of chronic care prescriptions, supplements, and routine medication cycles.</p>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;" id="wishlist-modal-items-list">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. ADVANCED HEALTH FILTER & CRITERIA MODAL -->
+      <div class="modal-overlay" id="filter-modal">
+        <div class="modal-sheet" style="height: 80vh; max-height: 80vh; display: flex; flex-direction: column;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-sliders" style="color: var(--primary-dark);"></i> Advanced Catalog Filters</div>
+            <button class="modal-close-btn" onclick="toggleFilterModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; padding: 4px 0; display: flex; flex-direction: column; gap: 14px;">
+            <!-- Price Range -->
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.8rem; display: flex; justify-content: space-between;">
+                <span>Price Cap</span>
+                <span id="filter-price-val" style="color: var(--primary-dark);">₹500</span>
+              </label>
+              <input type="range" id="filter-price-range" min="20" max="500" value="500" style="width: 100%; margin-top: 6px;" oninput="document.getElementById('filter-price-val').textContent = '₹' + this.value" />
+              <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-light); margin-top: 2px;">
+                <span>₹20</span>
+                <span>₹500</span>
+              </div>
+            </div>
+
+            <!-- Discount -->
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.8rem;">Minimum Discount</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                <button class="tag-btn-preset active" id="btn-discount-any" onclick="setFilterDiscount(0)">Any</button>
+                <button class="tag-btn-preset" id="btn-discount-10" onclick="setFilterDiscount(10)">10%+</button>
+                <button class="tag-btn-preset" id="btn-discount-20" onclick="setFilterDiscount(20)">20%+</button>
+                <button class="tag-btn-preset" id="btn-discount-30" onclick="setFilterDiscount(30)">30%+</button>
+              </div>
+            </div>
+
+            <!-- Rating -->
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.8rem;">Minimum Rating</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                <button class="tag-btn-preset active" id="btn-rating-any" onclick="setFilterRating(0)">Any</button>
+                <button class="tag-btn-preset" id="btn-rating-4" onclick="setFilterRating(4.0)">4.0 ★ +</button>
+                <button class="tag-btn-preset" id="btn-rating-45" onclick="setFilterRating(4.5)">4.5 ★ +</button>
+              </div>
+            </div>
+
+            <!-- Prescription Required -->
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.8rem;">Prescription Requirement</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                <button class="tag-btn-preset active" id="btn-rx-any" onclick="setFilterRx('any')">Any</button>
+                <button class="tag-btn-preset" id="btn-rx-yes" onclick="setFilterRx('yes')">Rx Required</button>
+                <button class="tag-btn-preset" id="btn-rx-no" onclick="setFilterRx('no')">Non-Rx Only</button>
+              </div>
+            </div>
+
+            <!-- Availability -->
+            <div class="form-group" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 10px; border-radius: 10px;">
+              <div>
+                <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text);">Exclude Out of Stock</h5>
+                <p style="font-size: 0.65rem; color: var(--text-light);">Only show active inventory in nearby stores</p>
+              </div>
+              <input type="checkbox" id="filter-stock-checkbox" style="width: 18px; height: 18px; cursor: pointer;" />
+            </div>
+
+            <!-- Nearby Store/Distance -->
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.8rem;">Store Distance Radius</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                <button class="tag-btn-preset active" id="btn-dist-any" onclick="setFilterDistance(99)">Any</button>
+                <button class="tag-btn-preset" id="btn-dist-2" onclick="setFilterDistance(2)">Within 2km</button>
+                <button class="tag-btn-preset" id="btn-dist-5" onclick="setFilterDistance(5)">Within 5km</button>
+                <button class="tag-btn-preset" id="btn-dist-10" onclick="setFilterDistance(10)">Within 10km</button>
+              </div>
+            </div>
+
+            <!-- Delivery Time -->
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.8rem;">Maximum Delivery Speed</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                <button class="tag-btn-preset active" id="btn-speed-any" onclick="setFilterSpeed(99)">Any</button>
+                <button class="tag-btn-preset" id="btn-speed-2" onclick="setFilterSpeed(2)">10-Min / 2-Hr Express</button>
+                <button class="tag-btn-preset" id="btn-speed-6" onclick="setFilterSpeed(6)">Within 6 Hours</button>
+                <button class="tag-btn-preset" id="btn-speed-24" onclick="setFilterSpeed(24)">Same Day (24-Hr)</button>
+              </div>
+            </div>
+          </div>
+          
+          <div style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 12px; background: white; margin-top: auto;">
+            <button class="btn-primary" style="background: #e2e8f0; color: var(--text); border: 1px solid var(--border); font-size: 0.82rem;" onclick="resetAllFiltersAndRefresh()">Reset Filters</button>
+            <button class="btn-primary" style="font-size: 0.82rem;" onclick="applyFiltersAndDismissModal()">Apply Criteria</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORDER DETAILS MODAL -->
+      <div class="modal-overlay" id="order-details-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-file-circle-info" style="color: var(--secondary);"></i> Order Details</div>
+            <button class="modal-close-btn" onclick="toggleOrderDetailsModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 20px;" id="order-details-content">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE TRACKING MODAL -->
+      <div class="modal-overlay" id="live-tracking-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh; padding: 1rem 12px;">
+          <div class="modal-header" style="margin-bottom: 8px;">
+            <div class="modal-title"><i class="fa-solid fa-route" style="color: #e11d48;"></i> Live Rider Tracking</div>
+            <button class="modal-close-btn" onclick="toggleLiveTrackingModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <!-- Leaflet Tracking Map Frame inside Modal -->
+          <div style="position: relative; height: 280px; width: 100%; border-radius: 18px; overflow: hidden; border: 1.5px solid var(--border);">
+            <div id="modal-tracking-leaflet-map" style="width: 100%; height: 100%; background: #f1f5f9; z-index: 10;"></div>
+            <button style="position: absolute; bottom: 12px; right: 12px; background: white; border: 1.5px solid var(--border); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; z-index: 1000;" onclick="recenterModalTrackingMap()"><i class="fa-solid fa-crosshairs" style="color: var(--text);"></i></button>
+          </div>
+
+          <!-- Real-time metrics -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid var(--border); margin-top: 8px;">
+            <div style="text-align: center;">
+              <span style="font-size: 0.62rem; color: var(--text-light); text-transform: uppercase; font-weight:600;">Distance Left</span>
+              <h5 style="font-size: 0.82rem; font-weight: 700; color: var(--text); margin-top: 2px;" id="tracking-metric-distance">1.8 km</h5>
+            </div>
+            <div style="text-align: center; border-left: 1px solid var(--border); border-right: 1px solid var(--border);">
+              <span style="font-size: 0.62rem; color: var(--text-light); text-transform: uppercase; font-weight:600;">Rider ETA</span>
+              <h5 style="font-size: 0.82rem; font-weight: 700; color: var(--secondary); margin-top: 2px;" id="tracking-metric-eta">12 mins</h5>
+            </div>
+            <div style="text-align: center;">
+              <span style="font-size: 0.62rem; color: var(--text-light); text-transform: uppercase; font-weight:600;">Current Speed</span>
+              <h5 style="font-size: 0.82rem; font-weight: 700; color: var(--primary-dark); margin-top: 2px;" id="tracking-metric-speed">32 km/h</h5>
+            </div>
+          </div>
+
+          <!-- Delivery Boy Info -->
+          <div style="background: white; border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Delivery Boy" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border);" id="tracking-rider-img" referrerPolicy="no-referrer" />
+              <div>
+                <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--text);" id="tracking-rider-name">Suresh Pillai</h5>
+                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--text-light); margin-top: 2px;">
+                  <span style="color: var(--warning);"><i class="fa-solid fa-star"></i> 4.8</span>
+                  <span>• 342 Deliveries</span>
+                  <span>• Activa 5G</span>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <a href="tel:+919999999999" id="tracking-rider-call" class="btn-primary" style="width: 36px; height: 36px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--secondary);"><i class="fa-solid fa-phone" style="font-size: 0.85rem;"></i></a>
+              <button class="btn-primary" style="width: 36px; height: 36px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--primary-dark);" onclick="showToast('Rider chat simulation: rider is driving.', 'warning')"><i class="fa-solid fa-message" style="font-size: 0.85rem;"></i></button>
+            </div>
+          </div>
+
+          <!-- Live Milestones status timeline -->
+          <div style="flex: 1; overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: 16px; padding: 12px; margin-top: 8px;">
+            <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 10px;"><i class="fa-solid fa-clock-rotate-left"></i> Delivery Boy Status Flow</h5>
+            <div class="track-timeline" id="modal-tracking-timeline" style="margin-left: 10px;">
+              <!-- Dynamic Milestones -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIGITAL INVOICE MODAL -->
+      <div class="modal-overlay" id="invoice-modal">
+        <div class="modal-sheet" style="height: 80vh; max-height: 80vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-receipt" style="color: var(--primary-dark);"></i> Tax Invoice</div>
+            <button class="modal-close-btn" onclick="toggleInvoiceModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;" id="invoice-content-area">
+            <!-- Generated dynamically -->
+          </div>
+          
+          <div style="display: flex; gap: 8px; margin-top: auto; border-top: 1px solid var(--border); padding-top: 10px;">
+            <button class="btn-primary" style="flex: 1; background: var(--secondary);" onclick="downloadInvoicePDF()"><i class="fa-solid fa-download"></i> Download PDF</button>
+            <button class="btn-primary" style="flex: 1; background: var(--primary-dark);" onclick="shareInvoicePDF()"><i class="fa-solid fa-share-nodes"></i> Share PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAMILY PROFILES MODAL -->
+      <div class="modal-overlay" id="family-profiles-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-people-roof" style="color: var(--primary-dark);"></i> Family Profiles</div>
+            <button class="modal-close-btn" onclick="toggleFamilyProfilesModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;" id="family-profiles-list">
+            <!-- Interactive list or form -->
+          </div>
+          
+          <button class="btn-primary" onclick="openAddFamilyMemberForm()"><i class="fa-solid fa-plus"></i> Add Family Profile</button>
+        </div>
+      </div>
+
+      <!-- HEALTH RECORDS MODAL -->
+      <div class="modal-overlay" id="health-records-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-folder-medical" style="color: var(--secondary);"></i> Health Records Storage</div>
+            <button class="modal-close-btn" onclick="toggleHealthRecordsModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;" id="health-records-list">
+            <!-- Records cards -->
+          </div>
+          
+          <button class="btn-primary" onclick="triggerRecordFileUpload()"><i class="fa-solid fa-file-arrow-up"></i> Upload Medical Document</button>
+          <input type="file" id="record-hidden-file-input" style="display: none;" accept="image/*,application/pdf" onchange="handleRecordFileUploadSelected(event)" />
+        </div>
+      </div>
+
+      <!-- HEALTH REMINDERS MODAL -->
+      <div class="modal-overlay" id="health-reminders-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-clock-rotate-left" style="color: var(--warning);"></i> Routine Reminders</div>
+            <button class="modal-close-btn" onclick="toggleHealthRemindersModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;" id="health-reminders-list">
+            <!-- List of reminders -->
+          </div>
+          
+          <button class="btn-primary" onclick="openAddReminderForm()"><i class="fa-solid fa-bell"></i> Schedule New Reminder</button>
+        </div>
+      </div>
+
+      <!-- APP SETTINGS MODAL -->
+      <div class="modal-overlay" id="settings-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-gears" style="color: var(--text-light);"></i> App Settings</div>
+            <button class="modal-close-btn" onclick="toggleSettingsModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 20px;">
+            <!-- Account Info -->
+            <div style="background: #f8fafc; border-radius: 14px; padding: 12px; border: 1px solid var(--border);">
+              <h5 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; color: var(--text);"><i class="fa-solid fa-circle-user"></i> Account Identity</h5>
+              <div style="font-size: 0.75rem; color: var(--text-light);">Logged in as: <strong id="settings-account-email">user@dawado.com</strong></div>
+            </div>
+
+            <!-- Language select -->
+            <div class="form-group">
+              <label>Default Interface Language</label>
+              <select id="settings-lang-select" class="form-control" style="padding-left: 12px;" onchange="saveAppSettings()">
+                <option value="en">English (US)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+                <option value="kn">ಕನ್ನಡ (Kannada)</option>
+              </select>
+            </div>
+
+            <!-- Theme preference -->
+            <div class="form-group">
+              <label>Theme Preference</label>
+              <select id="settings-theme-select" class="form-control" style="padding-left: 12px;" onchange="saveAppSettings()">
+                <option value="light">High Contrast Slate Light (Recommended)</option>
+                <option value="dark">Cosmic Dark Slate (Future Ready)</option>
+              </select>
+            </div>
+
+            <!-- Notifications toggles -->
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <h5 style="font-size: 0.78rem; font-weight: 700; color: var(--text);">Push Notifications Settings</h5>
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; cursor: pointer;">
+                <span>Order Status updates</span>
+                <input type="checkbox" id="settings-notif-orders" checked style="width: 16px; height: 16px;" onchange="saveAppSettings()" />
+              </label>
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; cursor: pointer; border-top: 1px solid #f1f5f9; padding-top: 6px;">
+                <span>Promotional & Festival coupons</span>
+                <input type="checkbox" id="settings-notif-offers" checked style="width: 16px; height: 16px;" onchange="saveAppSettings()" />
+              </label>
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; cursor: pointer; border-top: 1px solid #f1f5f9; padding-top: 6px;">
+                <span>Prescription renewals alerts</span>
+                <input type="checkbox" id="settings-notif-renew" checked style="width: 16px; height: 16px;" onchange="saveAppSettings()" />
+              </label>
+            </div>
+
+            <!-- Location Settings -->
+            <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+              <h5 style="font-size: 0.78rem; font-weight: 700; color: var(--text);">Location Services</h5>
+              <p style="font-size: 0.65rem; color: var(--text-light); line-height: 1.3;">Allow real-time GPS coordinates matching for lightning-fast drug routing dispatching.</p>
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; cursor: pointer; margin-top: 4px;">
+                <span>Background GPS Tracking</span>
+                <input type="checkbox" id="settings-gps-bg" checked style="width: 16px; height: 16px;" onchange="saveAppSettings()" />
+              </label>
+            </div>
+
+            <!-- Terms & Privacy Links -->
+            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; color: var(--secondary); font-weight: 600;">
+              <span style="cursor: pointer;" onclick="openTermsModal()">Terms & Conditions of Service</span>
+              <span style="cursor: pointer; border-top: 1px solid #f1f5f9; padding-top: 6px;" onclick="openPrivacyModal()">Data Privacy & HIPAA Security Policy</span>
+            </div>
+
+            <!-- Danger Zone -->
+            <div style="border-top: 1.5px dashed var(--border); padding-top: 12px; margin-top: 8px;">
+              <button class="btn-primary" style="background: var(--danger); font-size: 0.8rem;" onclick="triggerDeleteAccount()"><i class="fa-solid fa-trash"></i> Delete My Account Permanently</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HELP & SUPPORT MODAL -->
+      <div class="modal-overlay" id="support-modal">
+        <div class="modal-sheet" style="height: 85vh; max-height: 85vh;">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-circle-question" style="color: var(--primary-dark);"></i> Help & Support</div>
+            <button class="modal-close-btn" onclick="toggleHelpSupportModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 20px;">
+            <!-- Segment tab inside Support -->
+            <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px;">
+              <button id="support-tab-faq" class="btn-primary" style="flex: 1; padding: 6px; font-size: 0.78rem; border-radius: 8px; background: white; color: var(--primary-dark); border: none;" onclick="toggleSupportSubTab('faq')">FAQs</button>
+              <button id="support-tab-ticket" class="btn-primary" style="flex: 1; padding: 6px; font-size: 0.78rem; border-radius: 8px; background: transparent; color: var(--text-light); border: none;" onclick="toggleSupportSubTab('ticket')">Tickets</button>
+            </div>
+
+            <!-- Section A: FAQs -->
+            <div id="support-faq-panel" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="background: #f8fafc; border-radius: 10px; padding: 10px; border: 1px solid var(--border);">
+                <h6 style="font-size: 0.78rem; font-weight: 700; color: var(--text);">How do I upload a prescription?</h6>
+                <p style="font-size: 0.7rem; color: var(--text-light); margin-top: 2px;">Click the "Upload Rx" button on the home page, drag/drop or choose a clear image of your doctor's prescription. Our HIPAA pharmacists will verify it in minutes.</p>
+              </div>
+              <div style="background: #f8fafc; border-radius: 10px; padding: 10px; border: 1px solid var(--border);">
+                <h6 style="font-size: 0.78rem; font-weight: 700; color: var(--text);">What are the payment options?</h6>
+                <p style="font-size: 0.7rem; color: var(--text-light); margin-top: 2px;">We accept Cash on Delivery (COD) as well as secure online payments via Razorpay / UPI.</p>
+              </div>
+              <div style="background: #f8fafc; border-radius: 10px; padding: 10px; border: 1px solid var(--border);">
+                <h6 style="font-size: 0.78rem; font-weight: 700; color: var(--text);">How long does verification take?</h6>
+                <p style="font-size: 0.7rem; color: var(--text-light); margin-top: 2px;">Prescription verifications usually conclude in 5-15 minutes. You'll get real-time push alerts as soon as it's completed.</p>
+              </div>
+            </div>
+
+            <!-- Section B: Tickets & Chat -->
+            <div id="support-ticket-panel" style="display: none; flex-direction: column; gap: 12px;">
+              <!-- Raise a Support Ticket Form -->
+              <form onsubmit="handleRaiseSupportTicket(event)" style="display: flex; flex-direction: column; gap: 8px; background: #f8fafc; border-radius: 14px; padding: 12px; border: 1px solid var(--border);">
+                <h5 style="font-size: 0.78rem; font-weight: 700; color: var(--text);"><i class="fa-solid fa-ticket"></i> File a Help Ticket</h5>
+                <div class="form-group">
+                  <label>Problem Category</label>
+                  <select id="ticket-category" class="form-control" style="padding-left: 12px; font-size: 0.8rem; padding: 8px;">
+                    <option value="delivery">Delivery Delay</option>
+                    <option value="medicine">Incorrect Medicines Supplied</option>
+                    <option value="payment">Double Payment / Refund</option>
+                    <option value="other">General Query</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Describe issue in detail</label>
+                  <textarea id="ticket-description" class="form-control" required style="padding-left: 12px; height: 60px; font-size: 0.8rem; resize: none;" placeholder="Provide order reference numbers if any..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="padding: 8px; font-size: 0.8rem;">File Ticket <i class="fa-solid fa-paper-plane"></i></button>
+              </form>
+
+              <h5 style="font-size: 0.78rem; font-weight: 700; color: var(--text); margin-top: 4px;"><i class="fa-solid fa-list-check"></i> Ticket Log History</h5>
+              <div id="support-tickets-log" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Ticket history logs -->
+              </div>
+            </div>
+
+            <!-- Direct Contact buttons -->
+            <div style="border-top: 1.5px dotted var(--border); padding-top: 10px; display: flex; gap: 8px;">
+              <a href="mailto:support@dawado.com" class="btn-primary" style="flex: 1; font-size: 0.78rem; padding: 10px; background: var(--secondary);"><i class="fa-solid fa-envelope"></i> Email Support</a>
+              <a href="tel:+911800111222" class="btn-primary" style="flex: 1; font-size: 0.78rem; padding: 10px; background: var(--primary-dark);"><i class="fa-solid fa-headset"></i> Call toll-free</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABOUT DAWADO MODAL -->
+      <div class="modal-overlay" id="about-modal">
+        <div class="modal-sheet" style="height: 60vh; max-height: 60vh; text-align: center;">
+          <div class="modal-header" style="text-align: left;">
+            <div class="modal-title"><i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> About DawaDo</div>
+            <button class="modal-close-btn" onclick="toggleAboutModal(false)"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div style="padding: 1.5rem 12px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-shield-heart" style="font-size: 3.5rem; color: var(--primary-dark);"></i>
+            <h4 style="font-family: var(--font-display); font-weight: 700; font-size: 1.25rem;">DawaDo Medicine Partner</h4>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; background: var(--primary-light); color: var(--primary-dark); padding: 2px 10px; border-radius: 12px;">Enterprise Release v2.5.0</span>
+            <p style="font-size: 0.75rem; color: var(--text-light); max-width: 80%; line-height: 1.4; margin-top: 6px;">HIPAA & FDA-Compliant Medicine Logistics Engine. Sourcing from licensed neighborhood pharmacies and dispatching via professional delivery agents.</p>
+            
+            <div style="font-size: 0.68rem; color: var(--text-light); text-align: center; border-top: 1px solid var(--border); padding-top: 12px; width: 100%; margin-top: 8px;">
+              <strong>Open Source Licenses:</strong> LeafletJS (OSM), FontAwesome Icons, Tailwind CSS core components.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Firebase SDK Setup & Synchronizer Javascript Engine -->
+    <script type="module" src="/js/user_app.js"></script>
+  </body>
+</html>

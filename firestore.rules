@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global reusable helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Users Collection Rules ---
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn() && isOwner(userId) && isValidId(userId) && 
+                    request.resource.data.id == userId &&
+                    request.resource.data.keys().hasAll(['id', 'name', 'email', 'phone']) &&
+                    request.resource.data.name is string && request.resource.data.name.size() <= 100 &&
+                    request.resource.data.email is string && request.resource.data.email.size() <= 100 &&
+                    request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin()) &&
+                    request.resource.data.id == resource.data.id &&
+                    request.resource.data.keys().hasAll(['id', 'name', 'email', 'phone']) &&
+                    request.resource.data.name is string && request.resource.data.name.size() <= 100;
+      allow delete: if isAdmin();
+    }
+
+    // --- Stores Collection Rules ---
+    match /stores/{storeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(storeId) &&
+                    request.resource.data.id == storeId &&
+                    request.resource.data.keys().hasAll(['id', 'name', 'email', 'lat', 'lng', 'drugLicense', 'gst']) &&
+                    request.resource.data.name is string && request.resource.data.name.size() <= 100 &&
+                    request.resource.data.lat is number && request.resource.data.lng is number;
+      allow update: if isSignedIn() && (isOwner(storeId) || isAdmin()) &&
+                    request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    // --- Delivery Boys Collection Rules ---
+    match /delivery_boys/{deliveryBoyId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(deliveryBoyId) &&
+                    request.resource.data.id == deliveryBoyId &&
+                    request.resource.data.keys().hasAll(['id', 'name', 'email', 'phone', 'vehicleType', 'vehicleNumber']) &&
+                    request.resource.data.name is string && request.resource.data.name.size() <= 100;
+      allow update: if isSignedIn() && (isOwner(deliveryBoyId) || isAdmin()) &&
+                    request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    // --- Admins Collection Rules ---
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && (isOwner(adminId) || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    // --- Medicines Collection Rules ---
+    match /medicines/{medicineId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // --- Orders Collection Rules ---
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.storeId == request.auth.uid ||
+        resource.data.deliveryBoyId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && isValidId(orderId) &&
+                    request.resource.data.id == orderId &&
+                    request.resource.data.customerId == request.auth.uid &&
+                    request.resource.data.keys().hasAll(['id', 'customerId', 'storeId', 'deliveryStatus', 'paymentMethod', 'paymentStatus', 'totalAmount', 'address']) &&
+                    request.resource.data.totalAmount is number && request.resource.data.totalAmount >= 0;
+      allow update: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.storeId == request.auth.uid ||
+        resource.data.deliveryBoyId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Settlements Collection Rules ---
+    match /settlements/{settlementId} {
+      allow read: if isSignedIn() && (resource.data.deliveryBoyId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(settlementId) &&
+                    request.resource.data.id == settlementId &&
+                    request.resource.data.deliveryBoyId == request.auth.uid &&
+                    request.resource.data.amount is number && request.resource.data.amount > 0;
+      allow update, delete: if isAdmin();
+    }
+
+    // --- Audit Logs Collection Rules ---
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && isValidId(logId) &&
+                    request.resource.data.logId == logId &&
+                    request.resource.data.keys().hasAll(['logId', 'user', 'role', 'action', 'module', 'timestamp']);
+      allow update, delete: if false; // Audit logs are immutable!
+    }
+  }
+}

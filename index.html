@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DawaDo Enterprise Launchpad</title>
+    <!-- Google Fonts & Font Awesome CDN -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+      :root {
+        --primary: #10b981;
+        --primary-dark: #059669;
+        --secondary: #2563eb;
+        --background: #f8fafc;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Poppins', sans-serif;
+        background-color: var(--background);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header Style */
+      header {
+        background-color: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 1.5rem;
+        color: var(--text);
+      }
+
+      .logo span {
+        color: var(--primary);
+      }
+
+      .logo-icon {
+        background-color: #ecfdf5;
+        color: var(--primary);
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .btn-reset {
+        background-color: #f1f5f9;
+        border: none;
+        color: #475569;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+
+      .btn-reset:hover {
+        background-color: #e2e8f0;
+        color: #0f172a;
+      }
+
+      /* Main Layout */
+      main {
+        flex: 1;
+        padding: 2rem;
+        max-width: 1440px;
+        margin: 0 auto;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+
+      .hero {
+        text-align: center;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1.5rem 0;
+      }
+
+      .hero h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        margin-bottom: 0.75rem;
+      }
+
+      .hero p {
+        font-family: 'Inter', sans-serif;
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        line-height: 1.5;
+      }
+
+      /* Portal Selector Grid */
+      .portal-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .portal-card {
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      }
+
+      .portal-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background-color: var(--border);
+        transition: background-color 0.3s;
+      }
+
+      .portal-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+      }
+
+      .portal-card.user:hover::before { background-color: var(--primary); }
+      .portal-card.store:hover::before { background-color: var(--secondary); }
+      .portal-card.delivery:hover::before { background-color: #f59e0b; }
+      .portal-card.admin:hover::before { background-color: #8b5cf6; }
+
+      .portal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .portal-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+      }
+
+      .portal-card.user .portal-icon { background-color: #ecfdf5; color: var(--primary); }
+      .portal-card.store .portal-icon { background-color: #eff6ff; color: var(--secondary); }
+      .portal-card.delivery .portal-icon { background-color: #fffbeb; color: #f59e0b; }
+      .portal-card.admin .portal-icon { background-color: #f5f3ff; color: #8b5cf6; }
+
+      .portal-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .portal-card.user .portal-badge { background-color: #d1fae5; color: #065f46; }
+      .portal-card.store .portal-badge { background-color: #dbeafe; color: #1e40af; }
+      .portal-card.delivery .portal-badge { background-color: #fef3c7; color: #92400e; }
+      .portal-card.admin .portal-badge { background-color: #ede9fe; color: #5b21b6; }
+
+      .portal-details h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .portal-details p {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      .portal-action {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: auto;
+      }
+
+      .portal-card.user .portal-action { color: var(--primary); }
+      .portal-card.store .portal-action { color: var(--secondary); }
+      .portal-card.delivery .portal-action { color: #f59e0b; }
+      .portal-card.admin .portal-action { color: #8b5cf6; }
+
+      .portal-action i {
+        transition: transform 0.2s;
+      }
+
+      .portal-card:hover .portal-action i {
+        transform: translateX(4px);
+      }
+
+      /* Live Simulation Console Section */
+      .simulator-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .simulator-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .simulator-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 1.2rem;
+      }
+
+      .simulator-pulse {
+        width: 8px;
+        height: 8px;
+        background-color: var(--primary);
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      }
+
+      .simulator-layout {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+        height: 720px;
+        background: #0f172a;
+        padding: 1.5rem;
+        border-radius: 28px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+      }
+
+      @media (max-width: 1200px) {
+        .simulator-layout {
+          grid-template-columns: repeat(2, 1fr);
+          height: 1400px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .simulator-layout {
+          grid-template-columns: 1fr;
+          height: 2800px;
+        }
+      }
+
+      /* Phone Frame style */
+      .phone-frame {
+        background: #1e293b;
+        border-radius: 24px;
+        border: 8px solid #334155;
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      }
+
+      .phone-header-notch {
+        height: 24px;
+        background: #334155;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+
+      .phone-notch-pill {
+        width: 60px;
+        height: 12px;
+        background: #1e293b;
+        border-radius: 10px;
+      }
+
+      .phone-content {
+        flex: 1;
+        width: 100%;
+        border: none;
+        background: white;
+      }
+
+      .phone-footer-bar {
+        height: 16px;
+        background: #334155;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .phone-home-line {
+        width: 80px;
+        height: 4px;
+        background: #94a3b8;
+        border-radius: 2px;
+      }
+
+      .phone-label {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(4px);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        pointer-events: none;
+        z-index: 50;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* Instructions Section */
+      .guide-panel {
+        background-color: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 20px;
+        padding: 1.5rem;
+        display: flex;
+        gap: 1.25rem;
+        align-items: flex-start;
+      }
+
+      .guide-icon {
+        background-color: #3b82f6;
+        color: white;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
+
+      .guide-text h4 {
+        font-weight: 600;
+        color: #1e3a8a;
+        margin-bottom: 4px;
+        font-size: 1rem;
+      }
+
+      .guide-text p {
+        font-family: 'Inter', sans-serif;
+        color: #1e40af;
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      footer {
+        background-color: var(--surface);
+        border-top: 1px solid var(--border);
+        padding: 1.5rem 2rem;
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        margin-top: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Applet Navigation Bar -->
+    <header id="header_launchpad">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fa-solid fa-prescription-bottle-medical"></i>
+        </div>
+        DawaDo <span>Partner</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-reset" onclick="resetSimulatorDB()">
+          <i class="fa-solid fa-arrows-rotate"></i> Reset Database
+        </button>
+      </div>
+    </header>
+
+    <main id="main_launchpad">
+      <!-- Welcome Heading -->
+      <section class="hero">
+        <h1>Medicine Delivery Ecosystem</h1>
+        <p>A high-end enterprise medicine supply network featuring 4 modular portals operating in perfect real-time sync via an offline-capable browser database.</p>
+      </section>
+
+      <!-- Launch Buttons Grid -->
+      <section class="portal-grid">
+        <a href="/user.html" target="_blank" class="portal-card user" id="card_user">
+          <div class="portal-header">
+            <div class="portal-icon"><i class="fa-solid fa-user-injured"></i></div>
+            <span class="portal-badge">Customer</span>
+          </div>
+          <div class="portal-details">
+            <h3>User App</h3>
+            <p>Browse medications, manage digital carts, pinpoint location pins, place COD/online orders, and track deliveries.</p>
+          </div>
+          <div class="portal-action">Open User Portal <i class="fa-solid fa-arrow-right"></i></div>
+        </a>
+
+        <a href="/store.html" target="_blank" class="portal-card store" id="card_store">
+          <div class="portal-header">
+            <div class="portal-icon"><i class="fa-solid fa-house-medical"></i></div>
+            <span class="portal-badge">Medical Store</span>
+          </div>
+          <div class="portal-details">
+            <h3>Store App</h3>
+            <p>Control medical stock, track daily pharmacy turnover, and accept, prepare, or dispatch orders in real time.</p>
+          </div>
+          <div class="portal-action">Open Pharmacy Portal <i class="fa-solid fa-arrow-right"></i></div>
+        </a>
+
+        <a href="/deliveryboy.html" target="_blank" class="portal-card delivery" id="card_delivery">
+          <div class="portal-header">
+            <div class="portal-icon"><i class="fa-solid fa-motorcycle"></i></div>
+            <span class="portal-badge">Rider</span>
+          </div>
+          <div class="portal-details">
+            <h3>Delivery App</h3>
+            <p>Accept nearby routes, map customer navigation paths, track cash balances, and settle COD payments.</p>
+          </div>
+          <div class="portal-action">Open Rider Portal <i class="fa-solid fa-arrow-right"></i></div>
+        </a>
+
+        <a href="/admin.html" target="_blank" class="portal-card admin" id="card_admin">
+          <div class="portal-header">
+            <div class="portal-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <span class="portal-badge">Supervisor</span>
+          </div>
+          <div class="portal-details">
+            <h3>Admin Panel</h3>
+            <p>Approve stores/riders, examine live location feeds, review global commission records, and inspect audit logs.</p>
+          </div>
+          <div class="portal-action">Open Admin Panel <i class="fa-solid fa-arrow-right"></i></div>
+        </a>
+      </section>
+
+      <!-- System Testing Guidelines -->
+      <section class="guide-panel" id="guide_launchpad">
+        <div class="guide-icon">
+          <i class="fa-solid fa-circle-info"></i>
+        </div>
+        <div class="guide-text">
+          <h4>Seamless Multi-Tab Testing Flow</h4>
+          <p>This workspace implements an ultra-reliable <strong>LocalStorage event propagation engine</strong>. You can click any card above to open separate tabs, or use the interactive simulator below. Placing an order in the User App will instantly trigger order notifications in the Store App, which then assigns the rider in the Delivery App, visible immediately to the Supervisor Admin. Use the pre-seeded credentials <strong>user@dawado.com / user123</strong>, <strong>store@dawado.com / store123</strong>, <strong>delivery@dawado.com / delivery123</strong>, or <strong>admin@dawado.com / admin123</strong> to log in.</p>
+        </div>
+      </section>
+
+      <!-- Live Interactive Simulator Layout -->
+      <section class="simulator-container">
+        <div class="simulator-header">
+          <div class="simulator-title">
+            <span class="simulator-pulse"></span>
+            DawaDo Realtime Multi-Window Simulator
+          </div>
+        </div>
+
+        <div class="simulator-layout" id="sim_layout">
+          <!-- User App Frame -->
+          <div class="phone-frame">
+            <div class="phone-header-notch"><div class="phone-notch-pill"></div></div>
+            <iframe class="phone-content" src="/user.html" id="frame_user"></iframe>
+            <div class="phone-label">User Application</div>
+            <div class="phone-footer-bar"><div class="phone-home-line"></div></div>
+          </div>
+
+          <!-- Store App Frame -->
+          <div class="phone-frame">
+            <div class="phone-header-notch"><div class="phone-notch-pill"></div></div>
+            <iframe class="phone-content" src="/store.html" id="frame_store"></iframe>
+            <div class="phone-label">Medical Store Portal</div>
+            <div class="phone-footer-bar"><div class="phone-home-line"></div></div>
+          </div>
+
+          <!-- Delivery App Frame -->
+          <div class="phone-frame">
+            <div class="phone-header-notch"><div class="phone-notch-pill"></div></div>
+            <iframe class="phone-content" src="/deliveryboy.html" id="frame_delivery"></iframe>
+            <div class="phone-label">Delivery Boy App</div>
+            <div class="phone-footer-bar"><div class="phone-home-line"></div></div>
+          </div>
+
+          <!-- Admin Panel Frame -->
+          <div class="phone-frame">
+            <div class="phone-header-notch"><div class="phone-notch-pill"></div></div>
+            <iframe class="phone-content" src="/admin.html" id="frame_admin"></iframe>
+            <div class="phone-label">Admin Control Panel</div>
+            <div class="phone-footer-bar"><div class="phone-home-line"></div></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      DawaDo Medicine Delivery Platform &copy; 2026. Built with high-contrast Material 3 guidelines and real-time syncing.
+    </footer>
+
+    <script>
+      function resetSimulatorDB() {
+        if (confirm("Are you sure you want to restore the default database state? This will clear all current orders, custom medicines, and mock cash balances.")) {
+          localStorage.removeItem("dawado_db_root");
+          localStorage.removeItem("dawado_users");
+          localStorage.removeItem("dawado_current_user");
+          alert("Database successfully reset! Reloading simulator windows...");
+          
+          // Refresh all frames
+          document.getElementById("frame_user").src = "/user.html";
+          document.getElementById("frame_store").src = "/store.html";
+          document.getElementById("frame_delivery").src = "/deliveryboy.html";
+          document.getElementById("frame_admin").src = "/admin.html";
+        }
+      }
+    </script>
+  </body>
+</html>

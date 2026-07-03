@@ -1,0 +1,6 @@
+{
+  "name": "DawaDo - Your Medicine Partner",
+  "description": "An enterprise medicine delivery platform with four standalone portals (User, Store, Delivery Boy, and Admin Panel) synchronized via Firebase Realtime Database.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

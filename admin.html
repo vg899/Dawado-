@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DawaDo - Enterprise Business Control Terminal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <!-- Leaflet Maps CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col antialiased">
+
+  <!-- TOAST ALERT PANEL -->
+  <div id="toast-alert" class="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 bg-slate-900 text-emerald-400 border border-emerald-500/30 px-5 py-3 rounded-xl shadow-2xl transition-all duration-300 transform -translate-y-10 opacity-0 pointer-events-none">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-text" class="text-xs font-semibold">Decrypted Master Operations Ledger.</span>
+  </div>
+
+  <!-- AUTHENTICATION SCREEN -->
+  <div id="view-auth" class="flex-1 flex flex-col justify-center items-center px-4 py-12">
+    <div class="w-full max-w-md bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 backdrop-blur-xl shadow-2xl space-y-6">
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-2xl shadow-inner mb-2">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight text-slate-100">DawaDo <span class="text-emerald-400">HQ Console</span></h2>
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-medium font-mono">Central Business Operations Control</p>
+      </div>
+
+      <form id="form-login" class="space-y-4" onsubmit="handleAdminLogin(event)">
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Master Email Address</label>
+          <input type="email" id="admin-email" value="admin@dawado.com" required class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-3 text-xs outline-none text-slate-200 transition" placeholder="e.g. admin@dawado.com" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Security Access PIN</label>
+          <input type="password" id="admin-pass" value="admin123" required class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-3 text-xs outline-none text-slate-200 transition" placeholder="Enter master security code" />
+        </div>
+        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2">
+          Unlock Console <i class="fa-solid fa-key text-[10px]"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CENTRAL PLATFORM COCKPIT LAYOUT -->
+  <div id="main-layout" style="display: none;" class="flex-1 flex flex-col lg:flex-row min-h-screen">
+    
+    <!-- LEFT SIDEBAR CONTROL PANEL -->
+    <aside class="w-full lg:w-64 bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-900 flex flex-col shrink-0 select-none">
+      <!-- Brand Logo -->
+      <div class="p-5 border-b border-slate-900 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="p-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm"><i class="fa-solid fa-hand-holding-medical"></i></span>
+          <span class="font-bold tracking-tight text-sm text-slate-100">DawaDo <span class="text-emerald-400">HQ</span></span>
+        </div>
+        <span class="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">v1.0.0</span>
+      </div>
+
+      <!-- Scrollable Operations List -->
+      <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2 block">Enterprise Metrics</span>
+        <button id="sidebar-btn-dashboard" onclick="navigateToTab('dashboard')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-chart-pie text-sm"></i> <span>Operations Deck</span>
+        </button>
+        <button id="sidebar-btn-finance" onclick="navigateToTab('finance')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-wallet text-sm"></i> <span>Corporate Treasury</span>
+        </button>
+
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-4 mb-2 block">Business Units</span>
+        <button id="sidebar-btn-users" onclick="navigateToTab('users')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-users text-sm"></i> <span>Customers</span>
+        </button>
+        <button id="sidebar-btn-stores" onclick="navigateToTab('stores')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-house-medical text-sm"></i> <span>Pharmacy Partners</span>
+        </button>
+        <button id="sidebar-btn-fleet" onclick="navigateToTab('fleet')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-motorcycle text-sm"></i> <span>Courier Fleet</span>
+        </button>
+        <button id="sidebar-btn-orders" onclick="navigateToTab('orders')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-boxes-stacked text-sm"></i> <span>Orders Monitor</span>
+        </button>
+        <button id="sidebar-btn-medicines" onclick="navigateToTab('medicines')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-capsules text-sm"></i> <span>Medicine Catalog</span>
+        </button>
+
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-4 mb-2 block">Campaigns</span>
+        <button id="sidebar-btn-marketing" onclick="navigateToTab('marketing')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-rectangle-ad text-sm"></i> <span>Marketing Console</span>
+        </button>
+        <button id="sidebar-btn-support" onclick="navigateToTab('support')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-headset text-sm"></i> <span>Help Desk Center</span>
+        </button>
+
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-4 mb-2 block">Control Panel</span>
+        <button id="sidebar-btn-settings" onclick="navigateToTab('settings')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-sliders text-sm"></i> <span>System Parameters</span>
+        </button>
+        <button id="sidebar-btn-audits" onclick="navigateToTab('audits')" class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition">
+          <i class="fa-solid fa-clock-rotate-left text-sm"></i> <span>Security Logs</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer User Profile -->
+      <div class="p-4 border-t border-slate-900 bg-slate-950 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs border border-emerald-500/20 font-bold"><i class="fa-solid fa-user-shield"></i></div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-slate-200 leading-none">Super Admin</p>
+            <p class="text-[9px] font-mono text-slate-400 truncate mt-1">admin@dawado.com</p>
+          </div>
+        </div>
+        <button onclick="handleAdminLogout()" class="text-slate-400 hover:text-rose-400 p-2 rounded-lg hover:bg-rose-500/10 transition" title="Log Out Session">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTENT DISPLAY CONTAINER -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 lg:pb-0">
+      
+      <!-- MOBILE BOTTOM NAVIGATION FOR SMALL SCREENS -->
+      <div class="lg:hidden fixed bottom-0 left-0 w-full bg-slate-950 border-t border-slate-900 grid grid-cols-5 h-16 z-50">
+        <button id="mobile-btn-dashboard" onclick="navigateToTab('dashboard')" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 text-[10px]">
+          <i class="fa-solid fa-chart-pie text-sm"></i>
+          <span>Deck</span>
+        </button>
+        <button id="mobile-btn-orders" onclick="navigateToTab('orders')" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 text-[10px]">
+          <i class="fa-solid fa-boxes-stacked text-sm"></i>
+          <span>Orders</span>
+        </button>
+        <button id="mobile-btn-medicines" onclick="navigateToTab('medicines')" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 text-[10px]">
+          <i class="fa-solid fa-capsules text-sm"></i>
+          <span>Meds</span>
+        </button>
+        <button id="mobile-btn-support" onclick="navigateToTab('support')" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 text-[10px]">
+          <i class="fa-solid fa-headset text-sm"></i>
+          <span>Help</span>
+        </button>
+        <button id="mobile-btn-settings" onclick="navigateToTab('settings')" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 text-[10px]">
+          <i class="fa-solid fa-sliders text-sm"></i>
+          <span>Config</span>
+        </button>
+      </div>
+
+      <!-- VIEWPORTS VIEW MANAGER -->
+      <div class="p-6 space-y-6">
+
+        <!-- TAB 1: OPERATIONS DECK DASHBOARD -->
+        <section id="tab-view-dashboard" class="screen-tab-view space-y-6 hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-chart-line text-emerald-400"></i> Operations Control Desk</h1>
+              <p class="text-xs text-slate-400 mt-1">Real-time status metrics and logistics monitoring system.</p>
+            </div>
+            <span class="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-3 py-1.5 rounded-full font-mono uppercase shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Systems Active</span>
+          </div>
+
+          <!-- KPI metrics Grid -->
+          <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-lg">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Gross revenue</span>
+              <h3 id="kpi-revenue" class="text-lg font-bold text-slate-100 tracking-tight mt-2">₹0.00</h3>
+            </div>
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-lg">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total orders</span>
+              <h3 id="kpi-orders" class="text-lg font-bold text-slate-100 tracking-tight mt-2">0</h3>
+            </div>
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-lg">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Active Stores</span>
+              <h3 id="kpi-stores" class="text-lg font-bold text-slate-100 tracking-tight mt-2">0 / 0</h3>
+            </div>
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-lg">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Riders Online</span>
+              <h3 id="kpi-riders" class="text-lg font-bold text-slate-100 tracking-tight mt-2">0 / 0</h3>
+            </div>
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-lg col-span-2 lg:col-span-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Treasury Settled</span>
+              <h3 id="kpi-settled" class="text-lg font-bold text-slate-100 tracking-tight mt-2">₹0.00</h3>
+            </div>
+          </div>
+
+          <!-- Alert notifications section -->
+          <div id="live-notifications" class="space-y-2">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Central Telemetry & Gateway Monitor -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div class="md:col-span-4 flex items-center justify-between border-b border-slate-800 pb-3 mb-1">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Central Telemetry & Gateway Monitor</h4>
+                <p class="text-[10px] text-slate-500 mt-0.5">Continuous polling of third-party integration networks and performance health metrics.</p>
+              </div>
+              <span id="telemetry-global-status" class="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full font-mono uppercase">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ALL SYSTEMS HEALTHY
+              </span>
+            </div>
+            
+            <!-- Network status item -->
+            <div class="space-y-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Integration Latencies</span>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-cloud text-sky-400 w-4 font-normal"></i> Firebase</span>
+                  <span class="text-slate-200 font-mono font-bold" id="latency-firebase">18ms</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-images text-indigo-400 w-4 font-normal"></i> Cloudinary</span>
+                  <span class="text-slate-200 font-mono font-bold" id="latency-cloudinary">45ms</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-credit-card text-emerald-400 w-4 font-normal"></i> Razorpay</span>
+                  <span class="text-slate-200 font-mono font-bold" id="latency-razorpay">32ms</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-map-location-dot text-amber-400 w-4 font-normal"></i> MapTiler</span>
+                  <span class="text-slate-200 font-mono font-bold" id="latency-maps">24ms</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Health Status -->
+            <div class="space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-4">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Ecosystem Node Status</span>
+              <div class="space-y-1.5 mt-1">
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span class="text-slate-400">Firebase Realtime DB</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span class="text-slate-400">Cloudinary CDN assets</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span class="text-slate-400">Razorpay Payment Gateway</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span class="text-slate-400">OpenRoute Routing Engine</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-4">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Response & Performance</span>
+              <div class="space-y-2.5">
+                <div>
+                  <div class="flex justify-between text-[11px] mb-1">
+                    <span class="text-slate-400">Average Response Time</span>
+                    <span class="text-emerald-400 font-mono font-bold" id="avg-response-time">28ms</span>
+                  </div>
+                  <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 92%;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px] mb-1">
+                    <span class="text-slate-400">System Error Rate</span>
+                    <span class="text-emerald-400 font-mono font-bold" id="system-error-rate">0.02%</span>
+                  </div>
+                  <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 2%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active logs counters -->
+            <div class="space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-4">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Active Live Channels</span>
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-400">Active Users Chat</span>
+                  <span class="text-slate-100 font-mono font-bold bg-slate-800 px-1.5 py-0.5 rounded" id="live-users-count">1,402</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-400">Active Riders GPS</span>
+                  <span class="text-slate-100 font-mono font-bold bg-slate-800 px-1.5 py-0.5 rounded" id="live-riders-count">384</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-400">Stores Live Feeds</span>
+                  <span class="text-slate-100 font-mono font-bold bg-slate-800 px-1.5 py-0.5 rounded" id="live-stores-count">92</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Chart & Map Grid -->
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 flex flex-col gap-4 shadow-lg min-h-[300px]">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Revenue Performance Curve</h4>
+              <div class="flex-1 relative">
+                <canvas id="revenueTrendChart" class="w-full h-full"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 flex flex-col gap-4 shadow-lg min-h-[300px]">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Rider Position Monitoring Map</h4>
+              <div id="live-monitoring-map" class="flex-1 rounded-xl overflow-hidden border border-slate-800 shadow-inner min-h-[220px]">
+                <!-- Interactive Leaflet map container -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: CUSTOMERS LIST -->
+        <section id="tab-view-users" class="screen-tab-view space-y-6 hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-slate-100">Customer Directory</h1>
+              <p class="text-xs text-slate-400 mt-1">Manage, audit, and analyze registered consumer profiles.</p>
+            </div>
+          </div>
+
+          <!-- Customer Filter controls -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="search-users" oninput="renderUsersList()" placeholder="Search customers by name, email or mobile..." class="flex-1 bg-slate-900/50 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+            <select id="filter-user-status" onchange="renderUsersList()" class="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 outline-none transition focus:border-emerald-500">
+              <option value="all">All Profiles</option>
+              <option value="active">Active Only</option>
+              <option value="blocked">Blocked Only</option>
+            </select>
+          </div>
+
+          <div id="users-list-container" class="space-y-3">
+            <!-- Populated dynamically -->
+          </div>
+        </section>
+
+        <!-- TAB 3: PHARMACY PARTNERS -->
+        <section id="tab-view-stores" class="screen-tab-view space-y-6 hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-slate-100">Pharmacy Partner Hubs</h1>
+              <p class="text-xs text-slate-400 mt-1">Manage verified medicine hubs, drug licenses, and merchant profiles.</p>
+            </div>
+          </div>
+
+          <!-- Store Filter controls -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="search-stores" oninput="renderStoresList()" placeholder="Search stores by pharmacy title, license, city..." class="flex-1 bg-slate-900/50 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+            <select id="filter-store-status" onchange="renderStoresList()" class="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 outline-none transition focus:border-emerald-500">
+              <option value="all">All Partners</option>
+              <option value="active">Active Licensed</option>
+              <option value="pending">KYC Pending Approval</option>
+            </select>
+          </div>
+
+          <div id="stores-list-container" class="space-y-3">
+            <!-- Populated dynamically -->
+          </div>
+        </section>
+
+        <!-- TAB 4: COURIER FLEET -->
+        <section id="tab-view-fleet" class="screen-tab-view space-y-6 hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-slate-100">Courier Rider Fleet</h1>
+              <p class="text-xs text-slate-400 mt-1">Audit active riders, check vehicle compliance, and clear cash balances.</p>
+            </div>
+          </div>
+
+          <!-- Fleet controls -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="search-fleet" oninput="renderFleetList()" placeholder="Search riders by name, vehicle license plate..." class="flex-1 bg-slate-900/50 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+            <select id="filter-fleet-status" onchange="renderFleetList()" class="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 outline-none transition focus:border-emerald-500">
+              <option value="all">All Riders</option>
+              <option value="online">Online Riders</option>
+              <option value="offline">Offline Riders</option>
+              <option value="pending">KYC Pending Approval</option>
+            </select>
+          </div>
+
+          <div id="fleet-list-container" class="space-y-3">
+            <!-- Populated dynamically -->
+          </div>
+        </section>
+
+        <!-- TAB 5: ORDERS MONITOR -->
+        <section id="tab-view-orders" class="screen-tab-view space-y-6 hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-slate-100">Operations Order Monitor</h1>
+              <p class="text-xs text-slate-400 mt-1">Monitor dispatch timelines, assign couriers, and override status errors.</p>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="search-orders" oninput="renderOrdersList()" placeholder="Search orders by invoice ID, customer name, store name..." class="flex-1 bg-slate-900/50 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+            <select id="filter-order-status" onchange="renderOrdersList()" class="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 outline-none transition focus:border-emerald-500">
+              <option value="all">All Orders</option>
+              <option value="placed">Placed Orders</option>
+              <option value="picked_up">Picked Up (Dispatched)</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div id="orders-list-container" class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <!-- Populated dynamically -->
+          </div>
+        </section>
+
+        <!-- TAB 6: MEDICINE CATALOG -->
+        <section id="tab-view-medicines" class="screen-tab-view space-y-6 hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-slate-100">Global Medicine Catalog</h1>
+              <p class="text-xs text-slate-400 mt-1">Maintain central catalog definitions, pricing structures, and stock pools.</p>
+            </div>
+            <button onclick="addNewMedicinePrompt()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow transition shrink-0 flex items-center gap-2">
+              <i class="fa-solid fa-plus text-[10px]"></i> Catalog New Medicine
+            </button>
+          </div>
+
+          <!-- Filters -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="search-meds" oninput="renderMedicinesCatalog()" placeholder="Search catalogue by medicine name, composition..." class="flex-1 bg-slate-900/50 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+            <select id="filter-med-category" onchange="renderMedicinesCatalog()" class="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 outline-none transition focus:border-emerald-500">
+              <option value="all">All Categories</option>
+              <option value="Fever & Pain">Fever & Pain</option>
+              <option value="Antibiotics">Antibiotics</option>
+              <option value="Allergy Relief">Allergy Relief</option>
+              <option value="Diabetes">Diabetes</option>
+              <option value="Heart Health">Heart Health</option>
+              <option value="Cough & Cold">Cough & Cold</option>
+              <option value="Vitamins">Vitamins</option>
+            </select>
+          </div>
+
+          <div id="meds-catalog-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <!-- Populated dynamically -->
+          </div>
+        </section>
+
+        <!-- TAB 7: MARKETING CONSOLE -->
+        <section id="tab-view-marketing" class="screen-tab-view space-y-6 hidden">
+          <div>
+            <h1 class="text-xl font-bold text-slate-100">Marketing & Campaign Console</h1>
+            <p class="text-xs text-slate-400 mt-1">Configure active promo banners, discount coupons, and referral campaigns.</p>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <!-- Banner ads controller card -->
+            <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div class="flex justify-between items-center border-b border-slate-850 pb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400"><i class="fa-regular fa-images text-emerald-400 mr-1.5"></i> Platform Promo Banners</h4>
+                <button onclick="addNewPromoBanner()" class="bg-slate-800 hover:bg-slate-750 border border-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-200 uppercase tracking-wider transition">Add Banner</button>
+              </div>
+              <div id="list-admin-banners" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                <!-- Dynamic banners list -->
+              </div>
+            </div>
+
+            <!-- Coupons controller card -->
+            <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div class="flex justify-between items-center border-b border-slate-850 pb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400"><i class="fa-solid fa-tags text-emerald-400 mr-1.5"></i> Campaign Coupons</h4>
+                <button onclick="addNewPromoCoupon()" class="bg-slate-800 hover:bg-slate-750 border border-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-200 uppercase tracking-wider transition">Add Coupon</button>
+              </div>
+              <div id="list-admin-coupons" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                <!-- Dynamic coupons list -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 8: CORPORATE TREASURY -->
+        <section id="tab-view-finance" class="screen-tab-view space-y-6 hidden">
+          <div>
+            <h1 class="text-xl font-bold text-slate-100">Corporate Treasury & settlements</h1>
+            <p class="text-xs text-slate-400 mt-1">Monitor revenue splits, active commissions, and rider cash settlements.</p>
+          </div>
+
+          <!-- Revenue split grid -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Delivered Volume</span>
+              <h4 id="finance-gross" class="text-lg font-bold text-slate-200 mt-1">₹0.00</h4>
+            </div>
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Admin Commission (10%)</span>
+              <h4 id="finance-commission" class="text-lg font-bold text-emerald-400 mt-1">₹0.00</h4>
+            </div>
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-500">Rider Delivery pay</span>
+              <h4 id="finance-riders" class="text-lg font-bold text-blue-400 mt-1">₹0.00</h4>
+            </div>
+            <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Merchant Payout Shares</span>
+              <h4 id="finance-stores" class="text-lg font-bold text-slate-200 mt-1">₹0.00</h4>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Corporate Treasury Settlement Ledger</h4>
+            <div id="finance-settlements-list" class="space-y-3">
+              <!-- Settlements list loaded from database -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 9: HELP DESK SUPPORT TICKETS -->
+        <section id="tab-view-support" class="screen-tab-view space-y-6 hidden">
+          <div>
+            <h1 class="text-xl font-bold text-slate-100">Help Desk Support Hub</h1>
+            <p class="text-xs text-slate-400 mt-1">Manage active user complaints, rider delivery errors, and store reviews.</p>
+          </div>
+
+          <div id="support-tickets-container" class="space-y-3">
+            <!-- Dynamic support tickets list -->
+          </div>
+        </section>
+
+        <!-- TAB 10: SYSTEM PARAMETERS -->
+        <section id="tab-view-settings" class="screen-tab-view space-y-6 hidden">
+          <div>
+            <h1 class="text-xl font-bold text-slate-100">Platform System Parameters</h1>
+            <p class="text-xs text-slate-400 mt-1">Configure live delivery rates, tax values, and service configurations.</p>
+          </div>
+
+          <form onsubmit="savePlatformSettings(event)" class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-4 max-w-xl shadow-lg">
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Platform Brand Title Name</label>
+              <input type="text" id="set-app-name" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Delivery Charge (₹)</label>
+                <input type="number" id="set-delivery-charge" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">System GST Tax Rate (e.g. 0.05)</label>
+                <input type="number" step="0.01" id="set-tax-rate" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Platform Commission (e.g. 0.10)</label>
+                <input type="number" step="0.01" id="set-commission-rate" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operational Working Hours</label>
+                <input type="text" id="set-working-hours" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" />
+              </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-semibold text-slate-200">Enable Maintenance Mode</h3>
+                  <p class="text-xs text-slate-400 mt-1">Locks User, Store, and Delivery apps instantly. Admins retain full access.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="set-maintenance-mode" class="sr-only peer" />
+                  <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                </label>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customizable Maintenance Message</label>
+                <input type="text" id="set-maintenance-message" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs outline-none text-slate-200 transition" placeholder="We are currently upgrading our systems. Back in 10 minutes!" />
+              </div>
+            </div>
+
+            <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition">
+              Save Platform Parameters
+            </button>
+          </form>
+        </section>
+
+        <!-- TAB 11: SECURITY AUDIT LEDGER -->
+        <section id="tab-view-audits" class="screen-tab-view space-y-6 hidden">
+          <div>
+            <h1 class="text-xl font-bold text-slate-100">Platform Security Logs</h1>
+            <p class="text-xs text-slate-400 mt-1">Encrypted system activity log, administrative access points, and IP audits.</p>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-900 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="bg-slate-900/50 p-4 border-b border-slate-900">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400"><i class="fa-solid fa-receipt text-emerald-400 mr-1.5"></i> Platform Audit Trail Ledger</h4>
+            </div>
+            <div id="audits-log-container" class="max-h-[500px] overflow-y-auto pr-1">
+              <!-- Security audit records populate here -->
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- MULTI-PURPOSE OPERATIONAL DETAILS MODAL -->
+  <div id="global-details-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform scale-100 transition-all duration-300">
+      <div class="p-4 border-b border-slate-850 flex items-center justify-between">
+        <h3 id="global-modal-title" class="text-xs font-bold uppercase text-slate-200 tracking-wider">Verification Dossier</h3>
+        <button onclick="dismissGlobalModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="global-modal-content" class="p-5 max-h-[80vh] overflow-y-auto">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js and Leaflet Maps Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Centralized HQ admin controller module loading -->
+  <script type="module" src="/js/admin_app.js"></script>
+
+</body>
+</html>

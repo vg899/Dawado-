@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DawaDo Pharmacy Business Portal</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <!-- Leaflet Maps CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      :root {
+        --primary: #0284c7; /* Medical Sky Blue */
+        --primary-dark: #0369a1;
+        --primary-light: #e0f2fe;
+        --accent: #10b981; /* Healthy Green */
+        --accent-dark: #047857;
+        --accent-light: #d1fae5;
+        --background: #f1f5f9;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --text-light: #64748b;
+        --border: #e2e8f0;
+        --danger: #ef4444;
+        --danger-light: #fee2e2;
+        --warning: #f59e0b;
+        --warning-light: #fef3c7;
+        --success: #10b981;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Poppins', sans-serif;
+      }
+
+      body {
+        background-color: var(--background);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+      }
+
+      /* Native Mobile Container Shell */
+      .app-container {
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        background: var(--surface);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Views */
+      .screen-view {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        padding-bottom: 75px;
+        animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow-y: auto;
+      }
+
+      .screen-view.active {
+        display: flex;
+      }
+
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Headers */
+      .section-header {
+        padding: 1rem;
+        background: var(--surface);
+        border-bottom: 1.5px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .section-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text);
+      }
+
+      .section-title i {
+        color: var(--primary);
+      }
+
+      /* Bottom Nav bar */
+      .bottom-nav {
+        height: 65px;
+        background: var(--surface);
+        border-top: 1.5px solid var(--border);
+        display: flex;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 150;
+      }
+
+      .nav-tab {
+        flex: 1;
+        background: transparent;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: var(--text-light);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.65rem;
+        font-weight: 600;
+      }
+
+      .nav-tab i {
+        font-size: 1.25rem;
+      }
+
+      .nav-tab.active {
+        color: var(--primary);
+      }
+
+      /* Auth View Forms */
+      .auth-container {
+        padding: 2.5rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        flex: 1;
+        justify-content: center;
+      }
+
+      .auth-logo {
+        text-align: center;
+        margin-bottom: 0.5rem;
+      }
+
+      .auth-logo i {
+        font-size: 3.5rem;
+        color: var(--primary);
+        margin-bottom: 0.75rem;
+        filter: drop-shadow(0 4px 6px rgba(2, 132, 199, 0.2));
+      }
+
+      .auth-logo h2 {
+        font-weight: 800;
+        font-size: 1.8rem;
+        color: var(--text);
+      }
+
+      .auth-logo h2 span {
+        color: var(--accent);
+      }
+
+      .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .form-group label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .form-group input, .form-group select, .form-group textarea {
+        border: 1.5px solid var(--border);
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        background: #f8fafc;
+        color: var(--text);
+      }
+
+      .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        background: white;
+      }
+
+      .btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 11px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+
+      .btn:hover {
+        background: var(--primary-dark);
+      }
+
+      .btn-accent {
+        background: var(--accent);
+      }
+
+      .btn-accent:hover {
+        background: var(--accent-dark);
+      }
+
+      .btn-secondary {
+        background: #e2e8f0;
+        color: var(--text);
+      }
+
+      .btn-secondary:hover {
+        background: #cbd5e1;
+      }
+
+      /* Stats Dashboard Widgets */
+      .quick-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 1rem;
+      }
+
+      .stat-card {
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .stat-card-value {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--text);
+        font-family: 'Inter', sans-serif;
+      }
+
+      .stat-card-icon {
+        position: absolute;
+        bottom: 10px;
+        right: 12px;
+        font-size: 2rem;
+        opacity: 0.1;
+        color: var(--text);
+      }
+
+      /* Quick Action Grid */
+      .quick-actions-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-light);
+        text-transform: uppercase;
+        padding: 0.5rem 1rem 0 1rem;
+        letter-spacing: 0.05em;
+      }
+
+      .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        padding: 1rem;
+      }
+
+      .quick-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+      }
+
+      .quick-action-btn:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      }
+
+      .quick-action-btn i {
+        font-size: 1.35rem;
+        color: var(--primary);
+      }
+
+      .quick-action-btn span {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.2;
+      }
+
+      /* Order Segment Tabs */
+      .segment-tabs-row {
+        display: flex;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 0.75rem 1rem;
+        background: var(--surface);
+        border-bottom: 1.5px solid var(--border);
+        position: sticky;
+        top: 55px;
+        z-index: 90;
+      }
+
+      .segment-tabs-row::-webkit-scrollbar {
+        display: none;
+      }
+
+      .segment-tab {
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-light);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.15s;
+      }
+
+      .segment-tab.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      /* Order Ticket Cards */
+      .order-card {
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        margin: 0.75rem 1rem;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+      }
+
+      .order-card-header {
+        padding: 10px 14px;
+        border-bottom: 1.5px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        border-radius: 16px 16px 0 0;
+      }
+
+      .order-card-header h4 {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text);
+        font-family: 'Inter', sans-serif;
+      }
+
+      .order-card-body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .order-card-items {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #475569;
+        line-height: 1.4;
+      }
+
+      .order-card-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.72rem;
+        color: var(--text-light);
+      }
+
+      .order-card-meta div {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .order-card-meta i {
+        width: 14px;
+        color: var(--primary);
+      }
+
+      .order-card-price {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--accent-dark);
+        margin-top: 4px;
+      }
+
+      .order-card-footer {
+        padding: 10px 14px;
+        border-top: 1.5px solid var(--border);
+        display: flex;
+        gap: 8px;
+      }
+
+      /* Alert Badges */
+      .alert-banner {
+        background: var(--warning-light);
+        border: 1px solid var(--warning);
+        color: #b45309;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin: 0.5rem 1rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-weight: 500;
+      }
+
+      /* Modal Overlays */
+      .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+
+      .modal-box {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 420px;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes scaleUp {
+        from { transform: scale(0.96); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+
+      /* Toast Notifications */
+      .toast-alert {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-24px);
+        opacity: 0;
+        background: #0f172a;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 99999;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        pointer-events: none;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        max-width: 90%;
+        text-align: center;
+      }
+
+      .toast-alert.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+
+      /* Prescription view Zoom controls */
+      .rx-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        background: #000;
+        border-radius: 14px;
+        padding: 10px;
+        position: relative;
+        overflow: hidden;
+        height: 220px;
+      }
+
+      .rx-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        transition: transform 0.25s ease;
+      }
+
+      .rx-controls {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        display: flex;
+        gap: 6px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 8px;
+        padding: 4px;
+        z-index: 10;
+      }
+
+      .rx-ctrl-btn {
+        background: white;
+        border: 1px solid var(--border);
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+
+      /* List & Table formatting */
+      .enterprise-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.78rem;
+        margin-top: 5px;
+      }
+
+      .enterprise-table th, .enterprise-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+      }
+
+      .enterprise-table th {
+        font-weight: 700;
+        color: var(--text-light);
+        background: #f8fafc;
+      }
+
+      .enterprise-table td {
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Universal Toast Alert Bar -->
+      <div id="toast-bar" class="toast-alert">
+        <i class="fa-solid fa-circle-check" id="toast-icon"></i>
+        <span id="toast-text">System Synced Successfully</span>
+      </div>
+
+      <!-- VIEW 1: AUTHENTICATION SCREEN -->
+      <div id="view-auth" class="screen-view active">
+        <div class="auth-container">
+          <div class="auth-logo">
+            <i class="fa-solid fa-house-chimney-medical"></i>
+            <h2>DawaDo <span>Partner</span></h2>
+            <p style="font-size: 0.8rem; color: var(--text-light); font-weight: 600;">Licensed Pharmacy Merchant Gateway</p>
+          </div>
+
+          <!-- Login Sub-Panel -->
+          <div id="auth-login-panel">
+            <form id="form-login" class="auth-form" onsubmit="handleStoreLogin(event)">
+              <div class="form-group">
+                <label>Merchant Registered Email ID</label>
+                <input type="email" id="store-email" placeholder="e.g. apollo@dawado.com" required />
+              </div>
+              <div class="form-group">
+                <label>Access Security Password</label>
+                <input type="password" id="store-pass" placeholder="Enter password" required />
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin: 4px 0;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; cursor: pointer;">
+                  <input type="checkbox" id="remember-login" style="width: auto;" checked /> Remember Login
+                </label>
+                <a href="#" onclick="toggleAuthSubView('forgot')" style="font-size: 0.72rem; font-weight: 600; color: var(--primary); text-decoration: none;">Forgot Password?</a>
+              </div>
+              <button type="submit" class="btn" style="margin-top: 0.5rem;">
+                Unlock Business Terminal <i class="fa-solid fa-right-to-bracket"></i>
+              </button>
+            </form>
+            <div style="text-align: center; margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-light);">
+              Want to partner with DawaDo? <br/>
+              <a href="#" onclick="toggleAuthSubView('signup')" style="color: var(--primary); font-weight: 700; text-decoration: none;">Create Pharmacy Store Account</a>
+            </div>
+          </div>
+
+          <!-- Signup Sub-Panel -->
+          <div id="auth-signup-panel" style="display: none;">
+            <form id="form-signup" class="auth-form" onsubmit="handleStoreSignup(event)">
+              <div class="form-group">
+                <label>Pharmacy Store Name</label>
+                <input type="text" id="signup-store-name" placeholder="e.g. Apollo Pharmacy Sector 4" required />
+              </div>
+              <div class="form-group">
+                <label>Owner / Director Name</label>
+                <input type="text" id="signup-owner-name" placeholder="e.g. Dr. Harshvardhan" required />
+              </div>
+              <div class="form-group">
+                <label>Official Store Email</label>
+                <input type="email" id="signup-email" placeholder="e.g. sector4@apollo.com" required />
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signup-pass" placeholder="Minimum 6 characters" required />
+              </div>
+              <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="signup-confirm-pass" placeholder="Re-type password" required />
+              </div>
+              <button type="submit" class="btn btn-accent" style="margin-top: 0.5rem;">
+                Register & Initialize KYC <i class="fa-solid fa-user-plus"></i>
+              </button>
+            </form>
+            <div style="text-align: center; margin-top: 1.25rem; font-size: 0.8rem; color: var(--text-light);">
+              Already registered? <br/>
+              <a href="#" onclick="toggleAuthSubView('login')" style="color: var(--primary); font-weight: 700; text-decoration: none;">Login to Merchant Terminal</a>
+            </div>
+          </div>
+
+          <!-- Forgot Password Panel -->
+          <div id="auth-forgot-panel" style="display: none;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 5px;">Reset Security Password</h4>
+            <p style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 12px; line-height: 1.4;">Enter your registered pharmacy email address. We will verify and reset your access password instantly.</p>
+            <form id="form-forgot" class="auth-form" onsubmit="handleStoreForgot(event)">
+              <div class="form-group">
+                <label>Pharmacy Registered Email ID</label>
+                <input type="email" id="forgot-email" placeholder="e.g. store@apollo.com" required />
+              </div>
+              <button type="submit" class="btn">
+                Send Reset Password Link <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </form>
+            <button class="btn btn-secondary" onclick="toggleAuthSubView('login')" style="margin-top: 10px; width: 100%;">
+              Back to Login
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: KYC REGISTRATION & STATUS PANEL -->
+      <div id="view-kyc" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-id-card-clip"></i> KYC Compliance Folder</div>
+          <button class="btn-reset" onclick="handleStoreLogout()"><i class="fa-solid fa-power-off"></i> Logout</button>
+        </div>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Status Banner -->
+          <div id="kyc-status-banner" style="background: var(--warning-light); border: 1.5px solid var(--warning); color: #9a3412; border-radius: 14px; padding: 12px; font-size: 0.78rem; display: flex; flex-direction: column; gap: 6px;">
+            <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-circle-exclamation" style="font-size: 1rem; color: var(--warning);"></i> 
+              Verification Status: <span id="kyc-status-text" style="text-transform: uppercase;">Awaiting KYC Details</span>
+            </div>
+            <p id="kyc-status-desc" style="font-size: 0.72rem; opacity: 0.9;">To comply with Central Drug Standard Control Organization (CDSCO) & HIPAA privacy guidelines, complete the registration KYC form below.</p>
+            
+            <!-- Dev Quick Approval Button -->
+            <div id="dev-approval-shortcut" style="margin-top: 6px; border-top: 1px dotted rgba(154, 52, 18, 0.3); padding-top: 8px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 0.68rem; font-weight: 700; color: var(--primary-dark);"><i class="fa-solid fa-bug"></i> DEVELOPER FAST-TRACK Short-cut:</span>
+              <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.72rem; border-radius: 8px;" onclick="triggerDeveloperFastApproval()">
+                Simulate Admin Approved Status Instantly
+              </button>
+            </div>
+          </div>
+
+          <!-- KYC Multi-Step Wizard Form -->
+          <form id="form-kyc-profile" onsubmit="submitKycProfile(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Document Credentials Section -->
+            <div style="background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+              <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;"><i class="fa-solid fa-file-medical"></i> Drug License & Tax Registration</h5>
+              <div class="form-group">
+                <label>Drug License Number (Form 20/21)</label>
+                <input type="text" id="kyc-drug-license" placeholder="e.g. DL-2045/SZ-2022" required />
+              </div>
+              <div class="form-group">
+                <label>Drug License Expiry Date</label>
+                <input type="date" id="kyc-license-expiry" required />
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group">
+                  <label>GST Number (Optional)</label>
+                  <input type="text" id="kyc-gst" placeholder="29AAAAA0000A1Z5" />
+                </div>
+                <div class="form-group">
+                  <label>Aadhaar Card Number</label>
+                  <input type="text" id="kyc-aadhaar" placeholder="12-digit UID" maxlength="12" required />
+                </div>
+              </div>
+            </div>
+
+            <!-- Shop Locations Mapping -->
+            <div style="background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+              <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;"><i class="fa-solid fa-map-location-dot"></i> Pharmacy Store Coordinates</h5>
+              <div class="form-group">
+                <label>Physical Address</label>
+                <textarea id="kyc-address" rows="2" placeholder="e.g. Ground Floor, Sector 4, Bangalore" required></textarea>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px;">
+                <div class="form-group">
+                  <label>City</label>
+                  <input type="text" id="kyc-city" value="Bangalore" required />
+                </div>
+                <div class="form-group">
+                  <label>Postal PIN Code</label>
+                  <input type="number" id="kyc-pincode" placeholder="560001" required />
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group">
+                  <label>GPS Latitude</label>
+                  <input type="number" step="0.0000001" id="kyc-lat" value="12.9715987" required />
+                </div>
+                <div class="form-group">
+                  <label>GPS Longitude</label>
+                  <input type="number" step="0.0000001" id="kyc-lng" value="77.5945627" required />
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary" style="padding: 6px; font-size: 0.72rem; border-radius: 8px;" onclick="fetchKycGeolocationPin()">
+                <i class="fa-solid fa-crosshairs"></i> Capture Current GPS Location Pin
+              </button>
+            </div>
+
+            <!-- Media Uploads Section -->
+            <div style="background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+              <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;"><i class="fa-solid fa-image"></i> Media Attachments (HIPAA Encryption)</h5>
+              
+              <div class="form-group">
+                <label>Drug License Document Image</label>
+                <input type="file" accept="image/*" onchange="uploadKycDocImage('license', this)" required />
+                <div id="preview-license-doc" style="display: none; font-size: 0.65rem; color: var(--accent-dark); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Image Uploaded to Cloudinary folder.</div>
+              </div>
+
+              <div class="form-group">
+                <label>Store Logo & Front Image</label>
+                <input type="file" accept="image/*" onchange="uploadKycDocImage('logo', this)" required />
+                <div id="preview-logo-doc" style="display: none; font-size: 0.65rem; color: var(--accent-dark); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Image Uploaded to Cloudinary folder.</div>
+              </div>
+            </div>
+
+            <!-- Operations details -->
+            <div style="background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+              <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;"><i class="fa-solid fa-clock"></i> Working Hours & Contacts</h5>
+              <div class="form-group">
+                <label>Operating Business Hours</label>
+                <input type="text" id="kyc-hours" value="09:00 AM - 11:00 PM" required />
+              </div>
+              <div class="form-group">
+                <label>Emergency Support HotLine Contact</label>
+                <input type="text" id="kyc-emergency-phone" placeholder="e.g. +91 99999 88888" required />
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-accent" style="margin-top: 0.5rem; padding: 12px;">
+              Submit Compliance Folders <i class="fa-solid fa-cloud-arrow-up"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- VIEW 3: MAIN ENTERPRISE DASHBOARD -->
+      <div id="view-dashboard" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-laptop-medical"></i> Pharmacy Dashboard</div>
+          <span id="header-status-badge" style="font-size: 0.72rem; background: var(--accent-light); color: var(--accent-dark); padding: 4px 10px; border-radius: 12px; font-weight: 700;">Active</span>
+        </div>
+
+        <!-- Dashboard Financial Statistics Cards -->
+        <div class="quick-stats-grid">
+          <div class="stat-card" style="border-left: 4px solid var(--accent);">
+            <span class="stat-card-title">Today's Revenue</span>
+            <div class="stat-card-value" id="dashboard-rev-today">₹0</div>
+            <i class="fa-solid fa-sack-dollar stat-card-icon"></i>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid var(--primary);">
+            <span class="stat-card-title">Monthly Sales</span>
+            <div class="stat-card-value" id="dashboard-rev-month">₹0</div>
+            <i class="fa-solid fa-money-bill-trend-up stat-card-icon"></i>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid var(--warning);">
+            <span class="stat-card-title">Pending Orders</span>
+            <div class="stat-card-value" id="dashboard-orders-pending">0</div>
+            <i class="fa-solid fa-bell-concierge stat-card-icon"></i>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid var(--danger);">
+            <span class="stat-card-title">Low Stock / Expired</span>
+            <div class="stat-card-value" id="dashboard-stock-alerts">0 / 0</div>
+            <i class="fa-solid fa-triangle-exclamation stat-card-icon"></i>
+          </div>
+        </div>
+
+        <!-- System Alerts Banner inside Dashboard if critical items are low -->
+        <div id="dashboard-stock-alert-banner" class="alert-banner" style="display: none;">
+          <i class="fa-solid fa-triangle-exclamation" style="margin-top: 3px;"></i>
+          <div>
+            <div style="font-weight: 700;">Low Stock & Expiry Critical Alerts</div>
+            <div id="dashboard-stock-alert-text">We found medicines with less than 10 items. Replenish immediately to fulfill prescriptions.</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Grid Shortcuts -->
+        <span class="quick-actions-title">Pharmacy Management Control Panel</span>
+        <div class="quick-actions-grid">
+          <div class="quick-action-btn" onclick="navigateToStore('orders')">
+            <i class="fa-solid fa-list-check" style="color: var(--primary);"></i>
+            <span>Manage Orders</span>
+          </div>
+          <div class="quick-action-btn" onclick="navigateToStore('prescriptions')">
+            <i class="fa-solid fa-receipt" style="color: #8b5cf6;"></i>
+            <span>Rx Verify <b id="rx-pending-count-badge" style="background:#ef4444; color:white; padding:1px 5px; border-radius:10px; font-size:0.58rem; display:none;">0</b></span>
+          </div>
+          <div class="quick-action-btn" onclick="navigateToStore('inventory')">
+            <i class="fa-solid fa-cubes" style="color: var(--accent);"></i>
+            <span>Inventory</span>
+          </div>
+          <div class="quick-action-btn" onclick="navigateToStore('offers')">
+            <i class="fa-solid fa-tags" style="color: #ec4899;"></i>
+            <span>Coupons</span>
+          </div>
+          <div class="quick-action-btn" onclick="navigateToStore('suppliers')">
+            <i class="fa-solid fa-truck-field" style="color: #f59e0b;"></i>
+            <span>Suppliers</span>
+          </div>
+          <div class="quick-action-btn" onclick="navigateToStore('staff')">
+            <i class="fa-solid fa-users" style="color: #6366f1;"></i>
+            <span>Manage Staff</span>
+          </div>
+          <div class="quick-action-btn" onclick="navigateToStore('notifications')">
+            <i class="fa-solid fa-bell" style="color: #14b8a6;"></i>
+            <span>Alerts</span>
+          </div>
+          <div class="quick-action-btn" onclick="navigateToStore('profile')">
+            <i class="fa-solid fa-gears" style="color: #475569;"></i>
+            <span>Settings</span>
+          </div>
+        </div>
+
+        <!-- Latest Orders Segment -->
+        <h4 class="quick-actions-title" style="margin-bottom: 6px;">Live Inbound Activity feed</h4>
+        <div id="dashboard-live-feed-list" style="display: flex; flex-direction: column; gap: 8px; padding: 0 1rem 1rem 1rem;">
+          <!-- Loaded via db -->
+          <div style="text-align: center; color: var(--text-light); font-size: 0.75rem; padding: 1.5rem 0; background: #f8fafc; border-radius: 12px; border: 1.5px solid var(--border);">No active order processing activity at present.</div>
+        </div>
+      </div>
+
+      <!-- VIEW 4: COMPREHENSIVE ORDERS SCREEN -->
+      <div id="view-orders" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-cart-flatbed-suitcase"></i> Order Management</div>
+        </div>
+
+        <!-- Segmented Tab Category Filter -->
+        <div class="segment-tabs-row">
+          <button class="segment-tab active" onclick="filterStoreOrders('all', this)">All</button>
+          <button class="segment-tab" onclick="filterStoreOrders('placed', this)">New <span id="orders-badge-new" style="background:#ef4444; color:white; padding:1px 5px; border-radius:10px; font-size:0.55rem; display:none;">0</span></button>
+          <button class="segment-tab" onclick="filterStoreOrders('preparing', this)">Preparing</button>
+          <button class="segment-tab" onclick="filterStoreOrders('ready', this)">Ready / Assigned</button>
+          <button class="segment-tab" onclick="filterStoreOrders('past', this)">Past Ledger</button>
+        </div>
+
+        <div id="store-orders-list-wrapper" style="display: flex; flex-direction: column;">
+          <!-- Loaded dynamically via database -->
+        </div>
+      </div>
+
+      <!-- VIEW 5: PRESCRIPTION VERIFICATION SHEETS -->
+      <div id="view-prescriptions" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-receipt"></i> Prescription Audit Terminal</div>
+        </div>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 12px;" id="rx-verification-list-wrapper">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+
+      <!-- VIEW 6: MEDICAL CATALOG & INVENTORY CONTROLS -->
+      <div id="view-inventory" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-box-archive"></i> Medical Catalogue</div>
+          <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px;" onclick="openAddMedicineModal()">
+            <i class="fa-solid fa-plus"></i> Add Medicine
+          </button>
+        </div>
+
+        <!-- Search Bar and Category Toggle -->
+        <div style="padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 8px; background: white; border-bottom: 1.5px solid var(--border); position: sticky; top: 55px; z-index: 90;">
+          <div style="display: flex; gap: 6px; background: #f1f5f9; border-radius: 10px; padding: 6px 12px; align-items: center; border: 1.5px solid var(--border);">
+            <i class="fa-solid fa-magnifying-glass" style="color: var(--text-light); font-size: 0.85rem;"></i>
+            <input type="text" id="inventory-search-query" oninput="triggerInventorySearch(this.value)" placeholder="Search by name, brand, compositions, barcode..." style="background: transparent; border: none; outline: none; font-size: 0.82rem; flex: 1; color: var(--text);" />
+            <button onclick="triggerBarcodeSearchScanner()" style="border: none; background: transparent; cursor: pointer; color: var(--primary);"><i class="fa-solid fa-barcode"></i></button>
+          </div>
+          
+          <select id="inventory-category-filter" onchange="triggerInventoryCategoryFilter(this.value)" style="border: 1.5px solid var(--border); padding: 8px; border-radius: 8px; font-size: 0.78rem; background: #f8fafc; outline: none;">
+            <option value="ALL">All Master Categories</option>
+            <option value="Fever & Pain">Fever & Pain</option>
+            <option value="Antibiotics">Antibiotics</option>
+            <option value="Allergy Relief">Allergy Relief</option>
+            <option value="Diabetes">Diabetes</option>
+            <option value="Heart Health">Heart Health</option>
+            <option value="Cough & Cold">Cough & Cold</option>
+            <option value="Vitamins & Supplements">Vitamins & Supplements</option>
+          </select>
+        </div>
+
+        <!-- Scrollable Catalogue list -->
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 1rem;" id="catalog-list-wrapper">
+          <!-- Populated via database -->
+        </div>
+      </div>
+
+      <!-- VIEW 7: COUPONS, OFFERS & OFFERS LEDGER -->
+      <div id="view-offers" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-tags"></i> Marketing Coupons</div>
+          <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px;" onclick="openCreateCouponModal()">
+            <i class="fa-solid fa-plus"></i> Add Coupon
+          </button>
+        </div>
+
+        <!-- Offers layout -->
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+          <div style="background: var(--primary-light); color: var(--primary-dark); padding: 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">
+            Create high-converting store discounts, buy-one-get-one deals, or customized cart value coupons to drive revenue metrics.
+          </div>
+
+          <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: -5px;">Active Promotional Coupons</h5>
+          <div id="coupons-list-wrapper" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Populated from database -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 8: PURCHASE AND SUPPLIERS LEDGER -->
+      <div id="view-suppliers" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-truck-field"></i> Procurement & Suppliers</div>
+          <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px;" onclick="openAddSupplierModal()">
+            <i class="fa-solid fa-plus"></i> Add Supplier
+          </button>
+        </div>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Suppliers summary card -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <h5 style="font-size: 0.82rem; font-weight: 700;">Purchase Orders Log</h5>
+            <button class="btn" style="padding: 8px; font-size: 0.75rem; border-radius: 8px;" onclick="openLogPurchaseModal()">
+              <i class="fa-solid fa-file-invoice-dollar"></i> Log New Supplier Purchase Invoice
+            </button>
+          </div>
+
+          <!-- Suppliers Lists -->
+          <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em;">Registered Distributors</h5>
+          <div id="suppliers-list-wrapper" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Loaded via db -->
+          </div>
+
+          <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 10px;">Historic Purchases Ledger</h5>
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 12px; padding: 10px; overflow-x: auto;">
+            <table class="enterprise-table" id="table-purchases-log">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Distributor</th>
+                  <th>Amt Paid</th>
+                  <th>Items Logged</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-light);">No purchase invoices registered yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 9: ROLE BASED STAFF MANAGEMENT -->
+      <div id="view-staff" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-users-gear"></i> Pharmacy Staff roster</div>
+          <button class="btn btn-accent" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px;" onclick="openAddStaffModal()">
+            <i class="fa-solid fa-user-plus"></i> Add Staff
+          </button>
+        </div>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+          <div style="background: #f8fafc; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px; font-size: 0.75rem; color: var(--text-light); line-height: 1.4;">
+            Create sub-staff logins (Pharmacists, Inventory Managers, Packing Staff) with secure role-based restrictions inside the pharmacy.
+          </div>
+
+          <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em;">Authorized Staff Logins</h5>
+          <div id="staff-roster-list-wrapper" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Loaded via db -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 10: ALERTS & REAL-TIME SYSTEM NOTIFICATIONS -->
+      <div id="view-notifications" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-bell"></i> Business Notifications</div>
+          <button class="btn-reset" onclick="clearAllStoreNotifications()"><i class="fa-regular fa-trash-can"></i> Clear All</button>
+        </div>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 12px;" id="notifications-list-wrapper">
+          <!-- Loaded via db -->
+          <div style="text-align: center; color: var(--text-light); font-size: 0.8rem; padding: 3rem 1rem;">
+            <i class="fa-solid fa-bell-slash" style="font-size: 2.5rem; opacity: 0.2; margin-bottom: 12px; color: var(--primary);"></i>
+            <h4>All Caught Up!</h4>
+            <p style="font-size: 0.72rem; margin-top: 4px;">You have no unread business or critical stock alerts.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 11: STORE SETTINGS & LOGOUT -->
+      <div id="view-profile" class="screen-view">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-gears"></i> Core Store Settings</div>
+          <button class="btn-reset" onclick="handleStoreLogout()"><i class="fa-solid fa-power-off" style="color: var(--danger);"></i> Logout</button>
+        </div>
+
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Profile Badge -->
+          <div style="padding: 1.25rem; text-align: center; background: var(--primary-light); border-radius: 16px; border: 1.5px solid var(--border); display: flex; align-items: center; gap: 12px; text-align: left;">
+            <div style="width: 54px; height: 54px; background: white; color: var(--primary-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); flex-shrink: 0;">
+              <i class="fa-solid fa-house-chimney-medical"></i>
+            </div>
+            <div>
+              <h3 id="store-profile-name" style="font-size: 1rem; font-weight: 700;">Pharmacy Loading...</h3>
+              <p id="store-profile-email" style="font-family: 'Inter'; font-size: 0.72rem; color: var(--text-light);">email@dawado.com</p>
+            </div>
+          </div>
+
+          <!-- Store Working timings settings -->
+          <form id="form-store-settings" onsubmit="saveStoreBusinessSettings(event)" style="background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px;"><i class="fa-solid fa-clock"></i> Working Hours & Mode</h5>
+            
+            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px; border-radius: 8px;">
+              <span style="font-size: 0.75rem; font-weight: 700;">Holiday / Out of Hours Mode</span>
+              <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="settings-holiday-mode" style="width: auto;" />
+              </label>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Opening Hours</label>
+                <input type="time" id="settings-open-time" value="09:00" />
+              </div>
+              <div class="form-group">
+                <label>Closing Hours</label>
+                <input type="time" id="settings-close-time" value="23:00" />
+              </div>
+            </div>
+
+            <div class="form-group" style="flex-direction: row; gap: 8px; align-items: center; padding: 4px 0;">
+              <input type="checkbox" id="settings-auto-accept" style="width: auto;" checked />
+              <label for="settings-auto-accept" style="margin-bottom: 0;">Auto-Accept Orders (No verification required)</label>
+            </div>
+
+            <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-top: 5px;"><i class="fa-solid fa-truck-ramp-box"></i> Delivery Logistics Parameters</h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Delivery Radius (km)</label>
+                <input type="number" id="settings-delivery-radius" value="5" min="1" required />
+              </div>
+              <div class="form-group">
+                <label>Est Preparation Mins</label>
+                <input type="number" id="settings-preparation-mins" value="20" min="5" required />
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Min Order (INR)</label>
+                <input type="number" id="settings-min-order" value="100" min="0" required />
+              </div>
+              <div class="form-group">
+                <label>Delivery Fee (INR)</label>
+                <input type="number" id="settings-delivery-fee" value="30" min="0" required />
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-accent" style="margin-top: 6px; padding: 10px;">
+              Save Settings parameters <i class="fa-solid fa-square-check"></i>
+            </button>
+          </form>
+
+          <!-- Report downloader panel -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px;"><i class="fa-solid fa-file-pdf"></i> Business Analytical Reports</h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button class="btn btn-secondary" style="padding: 8px; font-size: 0.7rem; border-radius: 8px;" onclick="downloadStoreReport('sales', 'pdf')">
+                <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Sales Summary (PDF)
+              </button>
+              <button class="btn btn-secondary" style="padding: 8px; font-size: 0.7rem; border-radius: 8px;" onclick="downloadStoreReport('inventory', 'xlsx')">
+                <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Stock Status (XLSX)
+              </button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button class="btn btn-secondary" style="padding: 8px; font-size: 0.7rem; border-radius: 8px;" onclick="downloadStoreReport('cancelled', 'csv')">
+                <i class="fa-solid fa-file-csv"></i> Cancelled Logs (CSV)
+              </button>
+              <button class="btn btn-secondary" style="padding: 8px; font-size: 0.7rem; border-radius: 8px;" onclick="downloadStoreReport('tax', 'pdf')">
+                <i class="fa-solid fa-money-check-dollar" style="color: #1d4ed8;"></i> GST e-Invoice (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POPUP MODAL: ADD / EDIT MEDICINE -->
+      <div id="med-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+          <h3 id="med-modal-title" style="font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--primary-dark);">
+            <i class="fa-solid fa-prescription-bottle-medical"></i> Add New Medicine
+          </h3>
+          <form id="form-medicine-details" onsubmit="submitMedicineDetailsForm(event)" class="auth-form">
+            <input type="hidden" id="med-edit-id" />
+            <div class="form-group">
+              <label>Medicine Commercial Name *</label>
+              <input type="text" id="med-name" placeholder="e.g. Lipitor 10mg" required />
+            </div>
+            <div class="form-group">
+              <label>Chemical / Generic Composition Name *</label>
+              <input type="text" id="med-generic" placeholder="e.g. Atorvastatin Calcium" required />
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Strength / Dosage *</label>
+                <input type="text" id="med-strength" placeholder="e.g. 10mg / 5ml" required />
+              </div>
+              <div class="form-group">
+                <label>Manufacturer Brand *</label>
+                <input type="text" id="med-brand" placeholder="e.g. Pfizer" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Medicine Master Category *</label>
+              <select id="med-category" required>
+                <option value="Fever & Pain">Fever & Pain</option>
+                <option value="Antibiotics">Antibiotics</option>
+                <option value="Allergy Relief">Allergy Relief</option>
+                <option value="Diabetes">Diabetes</option>
+                <option value="Heart Health">Heart Health</option>
+                <option value="Cough & Cold">Cough & Cold</option>
+                <option value="Vitamins & Supplements">Vitamins & Supplements</option>
+              </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Batch Number *</label>
+                <input type="text" id="med-batch" placeholder="e.g. B-7452A" required />
+              </div>
+              <div class="form-group">
+                <label>Expiry Date *</label>
+                <input type="date" id="med-expiry" required />
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>MRP Price (INR) *</label>
+                <input type="number" step="0.01" id="med-mrp" placeholder="₹" min="0.5" required />
+              </div>
+              <div class="form-group">
+                <label>Selling Price *</label>
+                <input type="number" step="0.01" id="med-price" placeholder="₹" min="0.5" required />
+              </div>
+              <div class="form-group">
+                <label>Tax GST %</label>
+                <input type="number" id="med-gst" value="12" min="0" max="28" />
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Current Stock Quantity *</label>
+                <input type="number" id="med-stock" placeholder="Qty" min="0" required />
+              </div>
+              <div class="form-group">
+                <label>Min Threshold (Alert) *</label>
+                <input type="number" id="med-min-stock" value="10" min="1" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Barcode / Product SKU</label>
+              <input type="text" id="med-barcode" placeholder="Barcode scanner ID" />
+            </div>
+            <div class="form-group" style="flex-direction: row; gap: 8px; align-items: center; padding: 4px 0;">
+              <input type="checkbox" id="med-rx" style="width: auto;" />
+              <label for="med-rx" style="margin-bottom: 0; font-weight: 700; color: #ef4444;"><i class="fa-solid fa-prescription"></i> Requires Doctor Prescription (Rx)</label>
+            </div>
+            <div class="form-group">
+              <label>Therapeutic Uses & Side Effects</label>
+              <textarea id="med-description" rows="2" placeholder="Primary uses, dosage instructions, and known side effects..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Upload Medicine Image</label>
+              <input type="file" id="med-image-file" accept="image/*" onchange="uploadMedicineFormImage(this)" />
+              <div id="med-preview-img-container" style="display: none; align-items: center; gap: 10px; margin-top: 6px;">
+                <img id="med-preview-img" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" />
+                <span style="font-size: 0.65rem; color: var(--accent-dark); font-weight: 700;"><i class="fa-solid fa-circle-check"></i> Image attached</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeMedicineDetailsModal()">Cancel</button>
+              <button type="submit" class="btn btn-accent" style="flex: 1.5;">Publish Medication <i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- POPUP MODAL: CREATE DISCOUNT COUPON -->
+      <div id="coupon-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+          <h3 style="font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 1.05rem; color: var(--primary-dark);">
+            <i class="fa-solid fa-ticket"></i> Add Coupon
+          </h3>
+          <form id="form-coupon-details" onsubmit="submitNewCouponForm(event)" class="auth-form">
+            <div class="form-group">
+              <label>Promo Coupon Code *</label>
+              <input type="text" id="coupon-code" placeholder="e.g. HEALTH25" required style="text-transform: uppercase;" />
+            </div>
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Discount Value *</label>
+                <input type="number" id="coupon-discount" placeholder="Value" min="1" required />
+              </div>
+              <div class="form-group">
+                <label>Discount Type *</label>
+                <select id="coupon-type">
+                  <option value="percentage">% Percentage</option>
+                  <option value="flat">₹ Flat INR</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Min Cart Value (INR)</label>
+                <input type="number" id="coupon-min-cart" value="299" min="0" />
+              </div>
+              <div class="form-group">
+                <label>Max Limit Discount</label>
+                <input type="number" id="coupon-max-discount" value="150" min="1" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Expiry Date *</label>
+              <input type="date" id="coupon-expiry" required />
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeCreateCouponModal()">Cancel</button>
+              <button type="submit" class="btn btn-accent" style="flex: 1.2;">Create Code <i class="fa-solid fa-plus"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- POPUP MODAL: ADD SUPPLIER DISTRIBUTOR -->
+      <div id="supplier-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+          <h3 style="font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 1.05rem; color: var(--primary-dark);">
+            <i class="fa-solid fa-truck-field"></i> Register Distributor
+          </h3>
+          <form id="form-supplier-details" onsubmit="submitNewSupplierForm(event)" class="auth-form">
+            <div class="form-group">
+              <label>Supplier / Company Name *</label>
+              <input type="text" id="sup-name" placeholder="e.g. Balaji Medical Agencies" required />
+            </div>
+            <div class="form-group">
+              <label>GSTIN Registration Number</label>
+              <input type="text" id="sup-gst" placeholder="e.g. 29AAAAA0000A1Z5" />
+            </div>
+            <div class="form-group">
+              <label>Contact Phone Number *</label>
+              <input type="text" id="sup-phone" placeholder="e.g. +91 94480 12345" required />
+            </div>
+            <div class="form-group">
+              <label>Business Address</label>
+              <textarea id="sup-address" rows="2" placeholder="e.g. Gandhi Nagar, Bangalore"></textarea>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeAddSupplierModal()">Cancel</button>
+              <button type="submit" class="btn btn-accent" style="flex: 1.2;">Register Supplier <i class="fa-solid fa-plus"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- POPUP MODAL: LOG SUPPLIER PURCHASE INVOICE -->
+      <div id="purchase-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+          <h3 style="font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 1.05rem; color: var(--primary-dark);">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Log Purchase Invoice
+          </h3>
+          <form id="form-purchase-details" onsubmit="submitPurchaseInvoiceForm(event)" class="auth-form">
+            <div class="form-group">
+              <label>Select Supplier Distributor *</label>
+              <select id="pur-supplier-id" required>
+                <!-- Loaded from db -->
+              </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Invoice Number *</label>
+                <input type="text" id="pur-invoice-no" placeholder="e.g. INV-2026-987" required />
+              </div>
+              <div class="form-group">
+                <label>Purchase Date *</label>
+                <input type="date" id="pur-date" required />
+              </div>
+            </div>
+            
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 0.72rem; font-weight: 700;">Purchase Item Batch Specs</span>
+              <div class="form-group">
+                <label>Select Stock Item *</label>
+                <select id="pur-med-id" required>
+                  <!-- Loaded from medicines -->
+                </select>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group">
+                  <label>Quantity Bought *</label>
+                  <input type="number" id="pur-qty" min="1" placeholder="e.g. 100" required />
+                </div>
+                <div class="form-group">
+                  <label>Unit Buy Price *</label>
+                  <input type="number" step="0.01" id="pur-unit-price" placeholder="₹ Buy Price" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Attach PDF/Image Invoice copy</label>
+              <input type="file" accept="image/*,application/pdf" onchange="uploadPurchaseInvoiceFile(this)" />
+              <div id="pur-file-alert" style="display: none; font-size: 0.65rem; color: var(--accent-dark); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> File Logged.</div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeLogPurchaseModal()">Cancel</button>
+              <button type="submit" class="btn btn-accent" style="flex: 1.2;">Log ledger & Stock <i class="fa-solid fa-check"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- POPUP MODAL: REGISTER STAFF MEMBER -->
+      <div id="staff-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+          <h3 style="font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 1.05rem; color: var(--primary-dark);">
+            <i class="fa-solid fa-user-gear"></i> Add Staff Login
+          </h3>
+          <form id="form-staff-details" onsubmit="submitNewStaffForm(event)" class="auth-form">
+            <div class="form-group">
+              <label>Staff Member Full Name *</label>
+              <input type="text" id="staff-name" placeholder="e.g. Suresh Kumar" required />
+            </div>
+            <div class="form-group">
+              <label>Personal Mobile Contact *</label>
+              <input type="text" id="staff-phone" placeholder="e.g. +91 91234 56789" required />
+            </div>
+            <div class="form-group">
+              <label>Assigned Pharmacy Role *</label>
+              <select id="staff-role" required>
+                <option value="Manager">Store Manager</option>
+                <option value="Pharmacist">Licensed Pharmacist</option>
+                <option value="Packing Staff">Packing Assistant</option>
+                <option value="Inventory Staff">Inventory Control</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Portal Login Email *</label>
+              <input type="email" id="staff-email" placeholder="e.g. suresh@dawado.com" required />
+            </div>
+            <div class="form-group">
+              <label>Default Login Password *</label>
+              <input type="password" id="staff-pass" placeholder="e.g. staff123" required />
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeAddStaffModal()">Cancel</button>
+              <button type="submit" class="btn btn-accent" style="flex: 1.2;">Register Staff Member <i class="fa-solid fa-user-plus"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- POPUP MODAL: ORDER FULL DETAILS & TIMELINE -->
+      <div id="order-details-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 440px;">
+          <h3 style="font-weight: 700; font-size: 1.05rem; border-bottom: 1.5px solid var(--border); padding-bottom: 6px; color: var(--primary-dark);">
+            <i class="fa-solid fa-circle-info"></i> Order Processing Dossier
+          </h3>
+          <div id="order-modal-content-area" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
+            <!-- Rendered dynamically -->
+          </div>
+          <button class="btn btn-secondary" onclick="closeOrderDetailsModal()" style="width: 100%;">Close Panel</button>
+        </div>
+      </div>
+
+      <!-- POPUP MODAL: LIVE COURIER MAP TRACKER -->
+      <div id="map-modal-overlay" class="modal-overlay">
+        <div class="modal-box" style="max-width: 440px; padding: 12px;">
+          <h3 style="font-weight: 700; font-size: 1rem; color: var(--primary-dark); display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="fa-solid fa-map-location-dot"></i> Live Logistics Routing</span>
+            <button onclick="closeLiveMapModal()" style="border:none; background:transparent; font-size:1rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+          </h3>
+          
+          <div id="store-live-tracking-map" style="width: 100%; height: 260px; border-radius: 12px; background: #e2e8f0; border: 1.5px solid var(--border); margin: 6px 0;"></div>
+          
+          <div style="background: #f8fafc; border-radius: 10px; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem;">
+            <div>
+              <span style="color: var(--text-light); font-weight: 600;">ASSIGNED RIDER</span>
+              <div style="font-weight: 700; color: var(--text); margin-top: 2px;" id="map-rider-name">Rider Loading...</div>
+            </div>
+            <div>
+              <span style="color: var(--text-light); font-weight: 600;">LOGISTICS COURIER STATUS</span>
+              <div style="font-weight: 700; color: var(--accent-dark); margin-top: 2px;" id="map-rider-status">OUT FOR DELIVERY</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM TAB NAVIGATION BAR -->
+      <nav class="bottom-nav" id="bottom-nav-bar" style="display: none;">
+        <button class="nav-tab active" id="tab-dashboard" onclick="navigateToStore('dashboard')">
+          <i class="fa-solid fa-house"></i>
+          <span>Home</span>
+        </button>
+        <button class="nav-tab" id="tab-orders" onclick="navigateToStore('orders')">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Orders</span>
+        </button>
+        <button class="nav-tab" id="tab-inventory" onclick="navigateToStore('inventory')">
+          <i class="fa-solid fa-box-archive"></i>
+          <span>Inventory</span>
+        </button>
+        <button class="nav-tab" id="tab-profile" onclick="navigateToStore('profile')">
+          <i class="fa-solid fa-gears"></i>
+          <span>Settings</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Application Controllers script Module -->
+    <script type="module" src="/js/store_app.js"></script>
+  </body>
+</html>

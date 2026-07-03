@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DawaDo Partner - Delivery Command Console</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <!-- Leaflet Maps CSS/JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+      :root {
+        --primary: #f59e0b; /* Logistics Amber/Yellow */
+        --primary-dark: #d97706;
+        --primary-light: #fffbeb;
+        --secondary: #2563eb; /* Corporate Blue */
+        --accent: #10b981; /* Healthcare Green */
+        --accent-dark: #059669;
+        --accent-light: #ecfdf5;
+        --background: #f8fafc;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --text-light: #64748b;
+        --border: #e2e8f0;
+        --danger: #ef4444;
+        --danger-light: #fee2fee2;
+        --warning: #f59e0b;
+        --warning-light: #fef3c7;
+        --success: #10b981;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Poppins', sans-serif;
+      }
+
+      body {
+        background-color: #0f172a; /* Dark background to frame the phone interface */
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      /* Native Android App Container Mock */
+      .app-container {
+        width: 100%;
+        max-width: 480px;
+        height: 100vh;
+        background: var(--background);
+        position: relative;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 0;
+      }
+
+      @media (min-width: 480px) {
+        .app-container {
+          height: 95vh;
+          border-radius: 36px;
+          border: 12px solid #334155;
+        }
+      }
+
+      /* View transitions */
+      .screen-view {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        overflow-y: auto;
+        padding-bottom: 84px;
+        position: relative;
+        animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .screen-view.active {
+        display: flex;
+      }
+
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Header UI */
+      .app-header {
+        background: var(--surface);
+        padding: 1rem 1.25rem;
+        border-bottom: 1.5px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      }
+
+      .header-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 1.15rem;
+      }
+
+      .header-logo i {
+        color: var(--primary);
+        background: var(--primary-light);
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+      }
+
+      .header-logo span {
+        color: var(--accent-dark);
+      }
+
+      /* Dashboard Cards */
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 1.25rem;
+      }
+
+      .metric-card {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform 0.2s, border-color 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01);
+      }
+
+      .metric-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+      }
+
+      .metric-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+      }
+
+      /* Quick Actions */
+      .quick-actions-row {
+        padding: 0 1.25rem 1.25rem 1.25rem;
+      }
+
+      .quick-actions-box {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 24px;
+        padding: 1.25rem;
+      }
+
+      .quick-actions-title {
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 6px;
+      }
+
+      .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      .action-btn-item {
+        background: transparent;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .action-btn-item:hover {
+        opacity: 0.85;
+      }
+
+      .action-btn-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+      }
+
+      .action-btn-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-align: center;
+      }
+
+      /* Buttons & Forms */
+      .btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background 0.2s, transform 0.1s;
+        font-size: 0.85rem;
+      }
+
+      .btn:active {
+        transform: scale(0.98);
+      }
+
+      .btn-success { background: var(--accent-dark); }
+      .btn-success:hover { background: var(--accent-dark); }
+      .btn-secondary { background: #f1f5f9; color: #475569; }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 1rem;
+      }
+
+      .form-group label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .form-group input, .form-group select, .form-group textarea {
+        border: 1.5px solid var(--border);
+        padding: 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        outline: none;
+        transition: border-color 0.2s;
+        background: var(--surface);
+      }
+
+      .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        border-color: var(--primary);
+      }
+
+      /* Switch Slider Row */
+      .slider-row {
+        background: var(--primary-light);
+        border: 1.5px solid #fef3c7;
+        padding: 12px 16px;
+        border-radius: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 1.25rem;
+      }
+
+      .slider-label {
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .slider-track {
+        background: #cbd5e1;
+        width: 50px;
+        height: 26px;
+        border-radius: 13px;
+        position: relative;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        border: none;
+      }
+
+      .slider-track::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        transition: left 0.3s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .slider-track.active {
+        background: var(--accent);
+      }
+
+      .slider-track.active::after {
+        left: 27px;
+      }
+
+      /* Bottom Navigation */
+      .bottom-nav-bar {
+        height: 72px;
+        background: var(--surface);
+        border-top: 1.5px solid var(--border);
+        display: flex;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 200;
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.02);
+      }
+
+      .bottom-tab {
+        flex: 1;
+        background: transparent;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: var(--text-light);
+        cursor: pointer;
+        transition: color 0.2s;
+        font-size: 0.65rem;
+        font-weight: 600;
+      }
+
+      .bottom-tab i {
+        font-size: 1.25rem;
+      }
+
+      .bottom-tab.active {
+        color: var(--primary-dark);
+      }
+
+      /* Map container */
+      #delivery-route-map {
+        width: 100%;
+        height: 280px;
+        background: #e2e8f0;
+        border-radius: 16px;
+        border: 1.5px solid var(--border);
+        margin-bottom: 12px;
+      }
+
+      /* Custom Toast alert */
+      .toast-alert {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+        background: #0f172a;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 1000;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        pointer-events: none;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+        white-space: nowrap;
+      }
+
+      .toast-alert.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Toast Alert Bar -->
+      <div id="toast-bar" class="toast-alert">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-text">Alert Notification</span>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 1: AUTHENTICATION & KYC -->
+      <!-- ========================================= -->
+      <div id="view-auth" class="screen-view active">
+        <div style="padding: 2.5rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; justify-content: center; flex: 1;">
+          <div style="text-align: center;">
+            <div style="width: 64px; height: 64px; background: var(--primary-light); color: var(--primary-dark); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 12px auto; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);">
+              <i class="fa-solid fa-motorcycle animate-bounce"></i>
+            </div>
+            <h2 style="font-weight: 800; font-size: 1.75rem; letter-spacing: -0.025em; color: var(--text);">DawaDo <span>Partner</span></h2>
+            <p style="font-size: 0.8rem; color: var(--text-light); font-weight: 500;">Fleet Administration Gateway</p>
+          </div>
+
+          <!-- Login form -->
+          <div id="rider-login-panel">
+            <form id="form-login" onsubmit="handleRiderLogin(event)">
+              <div class="form-group">
+                <label>EMAIL ADDRESS</label>
+                <input type="email" id="rider-email" placeholder="e.g. delivery@dawado.com" required />
+              </div>
+              <div class="form-group">
+                <label>PIN PASSCODE</label>
+                <input type="password" id="rider-pass" placeholder="Enter security passcode" required />
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" id="remember-rider-login" style="accent-color: var(--primary);" /> Remember Login
+                </label>
+                <a href="#" onclick="toggleAuthSubView('forgot')" style="font-size: 0.75rem; font-weight: 600; color: var(--primary-dark); text-decoration: none;">Forgot Pass?</a>
+              </div>
+              <button type="submit" class="btn" style="width: 100%;">
+                Unlock Shift Console <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </form>
+            <div style="text-align: center; margin-top: 1rem;">
+              <span style="font-size: 0.75rem; color: var(--text-light);">New partner? </span>
+              <a href="#" onclick="toggleAuthSubView('signup')" style="font-size: 0.75rem; font-weight: 700; color: var(--secondary); text-decoration: none;">Submit Application</a>
+            </div>
+          </div>
+
+          <!-- Sign Up Panel -->
+          <div id="rider-signup-panel" style="display: none;">
+            <form id="form-signup" onsubmit="handleRiderSignup(event)">
+              <div class="form-group">
+                <label>FULL LEGAL NAME</label>
+                <input type="text" id="signup-rider-name" placeholder="As per driving license" required />
+              </div>
+              <div class="form-group">
+                <label>EMAIL ADDRESS</label>
+                <input type="email" id="signup-email" placeholder="Enter personal email" required />
+              </div>
+              <div class="form-group">
+                <label>CREATE PASSCODE</label>
+                <input type="password" id="signup-pass" placeholder="Minimum 6 characters" required />
+              </div>
+              <div class="form-group">
+                <label>CONFIRM PASSCODE</label>
+                <input type="password" id="signup-confirm-pass" placeholder="Re-enter passcode" required />
+              </div>
+              <button type="submit" class="btn btn-success" style="width: 100%;">
+                Create Account <i class="fa-solid fa-user-plus"></i>
+              </button>
+            </form>
+            <div style="text-align: center; margin-top: 1rem;">
+              <span style="font-size: 0.75rem; color: var(--text-light);">Have account? </span>
+              <a href="#" onclick="toggleAuthSubView('login')" style="font-size: 0.75rem; font-weight: 700; color: var(--primary-dark); text-decoration: none;">Sign In</a>
+            </div>
+          </div>
+
+          <!-- Forgot Password Panel -->
+          <div id="rider-forgot-panel" style="display: none;">
+            <form id="form-forgot" onsubmit="handleRiderForgot(event)">
+              <div class="form-group">
+                <label>REGISTERED EMAIL</label>
+                <input type="email" id="forgot-email" placeholder="Enter account email" required />
+              </div>
+              <button type="submit" class="btn" style="width: 100%;">
+                Send Reset Link <i class="fa-solid fa-envelope"></i>
+              </button>
+            </form>
+            <div style="text-align: center; margin-top: 1rem;">
+              <a href="#" onclick="toggleAuthSubView('login')" style="font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-decoration: none;"><i class="fa-solid fa-arrow-left"></i> Back to Login</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 2: KYC COMPLIANCE COMPULSORY -->
+      <!-- ========================================= -->
+      <div id="view-kyc" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-shield-halved"></i> <span>KYC Compliance</span></div>
+          <span id="kyc-status-header-badge" style="font-size: 0.65rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: var(--warning-light); color: var(--warning);">INCOMPLETE</span>
+        </div>
+
+        <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
+          <div id="kyc-status-alert-banner" style="padding: 12px; border-radius: 16px; border: 1.5px solid var(--warning); background: var(--warning-light);">
+            <div id="kyc-status-desc-text">
+              <h4 style="font-weight: 700; font-size: 0.85rem;">Compliance files required</h4>
+              <p style="font-size: 0.72rem; color: var(--text-light); margin-top: 4px;">Upload your verification files to gain administrative access.</p>
+            </div>
+          </div>
+
+          <!-- KYC Form inputs -->
+          <form id="form-kyc" onsubmit="submitRiderKycForm(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label>CONTACT PHONE</label>
+                <input type="text" id="kyc-rider-phone" placeholder="+91 XXXXX XXXXX" required />
+              </div>
+              <div class="form-group">
+                <label>EMERGENCY CONTACT</label>
+                <input type="text" id="kyc-rider-emergency" placeholder="+91 XXXXX XXXXX" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>RESIDENTIAL ADDRESS</label>
+              <input type="text" id="kyc-rider-address" placeholder="Flat, Street, Area" required />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>CITY</label>
+                <input type="text" id="kyc-rider-city" placeholder="e.g. Bangalore" required />
+              </div>
+              <div class="form-group">
+                <label>STATE</label>
+                <input type="text" id="kyc-rider-state" placeholder="e.g. Karnataka" required />
+              </div>
+              <div class="form-group">
+                <label>PINCODE</label>
+                <input type="text" id="kyc-rider-pincode" placeholder="e.g. 560001" required />
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label>VEHICLE TYPE</label>
+                <select id="kyc-vehicle-type">
+                  <option value="Bike">Motorcycle / Bike</option>
+                  <option value="Scooter">Electric Scooter</option>
+                  <option value="Bicycle">Bicycle</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>VEHICLE NUMBER</label>
+                <input type="text" id="kyc-vehicle-number" placeholder="KA-01-EE-1122" required />
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label>AADHAAR NUMBER</label>
+                <input type="text" id="kyc-aadhaar-num" placeholder="12-digit UIDAI" required />
+              </div>
+              <div class="form-group">
+                <label>DRIVING LICENSE</label>
+                <input type="text" id="kyc-dl-num" placeholder="DL Number ID" required />
+              </div>
+            </div>
+
+            <!-- Upload Zones -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; border-top: 1.5px dotted var(--border); padding-top: 12px; margin-bottom: 12px;">
+              <div style="text-align: center;">
+                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-light); display: block; margin-bottom: 6px;">PROFILE IMAGE</label>
+                <div style="border: 1.5px dashed var(--border); border-radius: 12px; padding: 10px; position: relative; cursor: pointer; background: var(--surface);">
+                  <i class="fa-solid fa-camera" style="font-size: 1.25rem; color: var(--text-light);"></i>
+                  <input type="file" accept="image/*" style="opacity: 0; position: absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;" onchange="uploadRiderKycDoc('profile', this)" />
+                  <div id="preview-profile-photo" style="display: none; color: var(--accent); font-size: 0.58rem; font-weight: 700; margin-top: 4px;"><i class="fa-solid fa-circle-check"></i> OK</div>
+                </div>
+              </div>
+
+              <div style="text-align: center;">
+                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-light); display: block; margin-bottom: 6px;">AADHAAR CARD</label>
+                <div style="border: 1.5px dashed var(--border); border-radius: 12px; padding: 10px; position: relative; cursor: pointer; background: var(--surface);">
+                  <i class="fa-solid fa-id-card" style="font-size: 1.25rem; color: var(--text-light);"></i>
+                  <input type="file" accept="image/*" style="opacity: 0; position: absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;" onchange="uploadRiderKycDoc('aadhaar', this)" />
+                  <div id="preview-aadhaar-doc" style="display: none; color: var(--accent); font-size: 0.58rem; font-weight: 700; margin-top: 4px;"><i class="fa-solid fa-circle-check"></i> OK</div>
+                </div>
+              </div>
+
+              <div style="text-align: center;">
+                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-light); display: block; margin-bottom: 6px;">DRIVING LICENSE</label>
+                <div style="border: 1.5px dashed var(--border); border-radius: 12px; padding: 10px; position: relative; cursor: pointer; background: var(--surface);">
+                  <i class="fa-solid fa-address-card" style="font-size: 1.25rem; color: var(--text-light);"></i>
+                  <input type="file" accept="image/*" style="opacity: 0; position: absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;" onchange="uploadRiderKycDoc('dl', this)" />
+                  <div id="preview-dl-doc" style="display: none; color: var(--accent); font-size: 0.58rem; font-weight: 700; margin-top: 4px;"><i class="fa-solid fa-circle-check"></i> OK</div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%;">Submit Verification files</button>
+          </form>
+
+          <button onclick="triggerRiderBypassApproval()" class="btn btn-success" style="width: 100%; margin-top: 6px; font-weight: 700;">
+            <i class="fa-solid fa-bolt"></i> FAST DEMO BYPASS APPROVAL
+          </button>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 3: HOME DASHBOARD -->
+      <!-- ========================================= -->
+      <div id="view-dashboard" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-motorcycle"></i> DawaDo <span>Partner</span></div>
+          <button class="btn-reset" onclick="handleRiderLogout()"><i class="fa-solid fa-power-off" style="color: var(--danger);"></i></button>
+        </div>
+
+        <!-- Shift Online Switcher Slider -->
+        <div class="slider-row">
+          <div class="slider-label" id="shift-toggle-label-text">
+            <i class="fa-solid fa-toggle-off" style="color: var(--text-light);"></i> Slide to start shift
+          </div>
+          <button class="slider-track" id="btn-shift-toggle" onclick="toggleRiderShiftState()"></button>
+        </div>
+
+        <!-- Metrics widgets grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon" style="background: var(--accent-light); color: var(--accent-dark);"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <span style="font-size: 0.68rem; font-weight: 600; color: var(--text-light);">TODAY'S PAYOUT</span>
+            <h3 id="dash-stats-earnings-today" style="font-size: 1.2rem; font-weight: 700;">₹0</h3>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background: #eff6ff; color: #2563eb;"><i class="fa-solid fa-truck-fast"></i></div>
+            <span style="font-size: 0.68rem; font-weight: 600; color: var(--text-light);">FULFILLED</span>
+            <h3 id="dash-stats-deliveries-today" style="font-size: 1.2rem; font-weight: 700;">0</h3>
+          </div>
+
+          <div class="metric-card" style="grid-column: span 2;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="font-size: 0.68rem; font-weight: 600; color: var(--text-light);">HELD COD CASH BALANCE</span>
+                <h3 id="dash-stats-cash-collected" style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">₹0.00</h3>
+              </div>
+              <button onclick="showView('settle')" class="btn btn-success" style="padding: 6px 14px; font-size: 0.72rem; font-weight: 700;"><i class="fa-solid fa-wallet"></i> Settle</button>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background: #fffbeb; color: #d97706;"><i class="fa-solid fa-star"></i></div>
+            <span style="font-size: 0.68rem; font-weight: 600; color: var(--text-light);">FLEET RATING</span>
+            <h3 id="dash-stats-rating" style="font-size: 1.1rem; font-weight: 700;">5.0 ★</h3>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background: #f5f3ff; color: #8b5cf6;"><i class="fa-solid fa-gauge-high"></i></div>
+            <span style="font-size: 0.68rem; font-weight: 600; color: var(--text-light);">COMPLIANCE SCORE</span>
+            <h3 id="dash-stats-perf" style="font-size: 1.1rem; font-weight: 700;">100%</h3>
+          </div>
+        </div>
+
+        <!-- Quick navigation controls -->
+        <div class="quick-actions-row">
+          <div class="quick-actions-box">
+            <h4 class="quick-actions-title">OPERATIONS CONTROL</h4>
+            <div class="actions-grid">
+              <button class="action-btn-item" onclick="showView('duty')">
+                <div class="action-btn-icon" style="background: var(--primary-light); color: var(--primary-dark);"><i class="fa-solid fa-compass"></i></div>
+                <div class="action-btn-label">Active Duty</div>
+              </button>
+              <button class="action-btn-item" onclick="showView('settle')">
+                <div class="action-btn-icon" style="background: var(--accent-light); color: var(--accent-dark);"><i class="fa-solid fa-scale-balanced"></i></div>
+                <div class="action-btn-label">Settlement</div>
+              </button>
+              <button class="action-btn-item" onclick="showView('earnings')">
+                <div class="action-btn-icon" style="background: #eff6ff; color: #2563eb;"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="action-btn-label">Earnings</div>
+              </button>
+              <button class="action-btn-item" onclick="showView('history')">
+                <div class="action-btn-icon" style="background: #fdf2f8; color: #db2777;"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div class="action-btn-label">Log History</div>
+              </button>
+              <button class="action-btn-item" onclick="showView('attendance')">
+                <div class="action-btn-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fa-solid fa-clock"></i></div>
+                <div class="action-btn-label">Attendance</div>
+              </button>
+              <button class="action-btn-item" onclick="showView('profile')">
+                <div class="action-btn-icon" style="background: #f5f3ff; color: #8b5cf6;"><i class="fa-solid fa-user-circle"></i></div>
+                <div class="action-btn-label">Profile</div>
+              </button>
+              <button class="action-btn-item" onclick="showView('support')">
+                <div class="action-btn-icon" style="background: #f8fafc; color: #475569;"><i class="fa-solid fa-circle-question"></i></div>
+                <div class="action-btn-label">Help Support</div>
+              </button>
+              <button class="action-btn-item" onclick="showView('settings')">
+                <div class="action-btn-icon" style="background: #fafaf9; color: #78716c;"><i class="fa-solid fa-sliders"></i></div>
+                <div class="action-btn-label">Settings</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 4: ACTIVE DUTY & MAPS -->
+      <!-- ========================================= -->
+      <div id="view-duty" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-compass"></i> Active <span>Duty Tracker</span></div>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Nearby dispatch alerts (Auto-updated via JS) -->
+          <div id="pending-dispatches-wrapper">
+            <div style="text-align: center; color: var(--text-light); padding: 3rem 1rem;">
+              <i class="fa-solid fa-satellite" style="font-size: 2.5rem; opacity: 0.15; margin-bottom: 12px;"></i>
+              <h4>Ready For Dispatch</h4>
+              <p style="font-size: 0.72rem;">Go Online to start receiving prescription routes.</p>
+            </div>
+          </div>
+
+          <!-- Active Order Dispatch Ticket -->
+          <div id="active-ticket-wrapper" style="display: none; flex-direction: column; gap: 10px;">
+            <div style="background: white; border: 1.5px solid var(--border); border-radius: 24px; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px dotted var(--border); padding-bottom: 10px; margin-bottom: 10px;">
+                <span id="active-route-order-id" style="font-family:'Inter'; font-weight: 800; font-size: 0.95rem; color: var(--text);">#O-XXXXXX</span>
+                <span id="active-route-pay-mode" style="background: var(--accent-light); color: var(--accent-dark); font-size: 0.65rem; font-weight: 700; padding: 4px 8px; border-radius: 8px;">COD COLLECT</span>
+              </div>
+
+              <!-- Draggable map -->
+              <div id="delivery-route-map"></div>
+              <p style="font-size: 0.68rem; color: var(--text-light); font-family: 'Inter'; text-align: center; margin-top: -8px; margin-bottom: 12px;">
+                <i class="fa-solid fa-arrows-up-down-left-right animate-bounce" style="color: var(--secondary);"></i> Drag the <b>Biker Icon</b> to simulate location updating back to base.
+              </p>
+
+              <!-- Location tracking labels -->
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.78rem; color: var(--text);">
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                  <i class="fa-solid fa-house-medical" style="color: var(--accent-dark); margin-top: 3px;"></i>
+                  <div>
+                    <b style="display: block; font-size: 0.7rem; color: var(--text-light);">PHARMACY PICKUP HUB</b>
+                    Apollo Pharmacy, Outer Ring Rd, Bangalore
+                  </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                  <i class="fa-solid fa-house-chimney" style="color: var(--danger); margin-top: 3px;"></i>
+                  <div>
+                    <b style="display: block; font-size: 0.7rem; color: var(--text-light);">DELIVERY ADDRESS</b>
+                    <span id="active-route-address">Customer Address</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Customer Communication controls -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1.5px solid var(--border);">
+                <div style="display: flex; flex-direction: column;">
+                  <span id="nav-cust-name" style="font-weight: 700; font-size: 0.85rem;">Ananya Sharma</span>
+                  <span id="nav-cust-phone" style="font-family:'Inter'; font-size: 0.7rem; color: var(--text-light);">+91 91234 56789</span>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                  <button onclick="triggerBarcodeVerificationScanner()" class="btn btn-secondary" style="padding: 10px; width: 40px; height: 40px;" title="Scan Barcode Packet Verification">
+                    <i class="fa-solid fa-barcode"></i>
+                  </button>
+                  <button onclick="triggerRiderCallSupport('customer')" class="btn btn-secondary" style="padding: 10px; width: 40px; height: 40px; color: var(--accent-dark);" title="Call Customer">
+                    <i class="fa-solid fa-phone"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Collect Payout Info -->
+              <div style="background: var(--background); padding: 10px 14px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 12px; border: 1px solid var(--border);">
+                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-light);">COLLECT PARCEL CASH</span>
+                <span style="font-weight: 800; font-size: 1.1rem; color: var(--danger);">₹<span id="active-route-price">0.00</span></span>
+              </div>
+
+              <!-- Dispatch Buttons -->
+              <div style="display: flex; gap: 10px; margin-top: 14px;">
+                <button class="btn" id="btn-route-action-pickup" style="width: 100%; background: var(--secondary);" onclick="markActiveOrderPickedUp()">
+                  Confirm Packet Pickup
+                </button>
+                <button class="btn btn-success" id="btn-route-action-deliver" style="width: 100%; display: none;" onclick="markActiveOrderDelivered()">
+                  Complete Delivery (Confirm Collect) <i class="fa-solid fa-circle-check"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 5: COD RAZORPAY SETTLEMENT -->
+      <!-- ========================================= -->
+      <div id="view-settle" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-scale-balanced"></i> Corporate <span>Settlements</span></div>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Wallet Card -->
+          <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 1.5rem; border-radius: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15);">
+            <div>
+              <span style="font-size: 0.72rem; letter-spacing: 0.05em; opacity: 0.75; font-weight: 600; font-family:'Inter';">OUTSTANDING TREASURY DEBT</span>
+              <h2 id="settle-cash-balance" style="font-size: 2.25rem; font-weight: 800; color: #f59e0b; font-family:'Inter'; margin-top: 4px;">₹0.00</h2>
+            </div>
+            <p style="font-size: 0.7rem; opacity: 0.7; font-family:'Inter'; line-height: 1.4;">
+              All cash collected through Cash On Delivery (COD) services must be settled back securely to the DawaDo Treasury ledger through Razorpay instantly.
+            </p>
+            <button onclick="initiateTreasurySettlement()" class="btn btn-success" style="background: white; color: var(--text); font-weight: 800; padding: 10px;">
+              Settle To Corporate Treasury <i class="fa-solid fa-shield-halved" style="color: var(--accent-dark);"></i>
+            </button>
+          </div>
+
+          <!-- Historic settlements ledger -->
+          <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px;">Historic Settle Audit Logs</h4>
+          <div id="list-historic-settlements" style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="text-align: center; color: var(--text-light); font-size: 0.8rem; padding: 2rem 0;">No settlements processed.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 6: EARNINGS DETAIL BREAKDOWN -->
+      <!-- ========================================= -->
+      <div id="view-earnings" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-chart-line"></i> Fleet <span>Earnings</span></div>
+          <button class="btn-reset" onclick="showView('dashboard')"><i class="fa-solid fa-house"></i></button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 20px; padding: 1.25rem; text-align: center;">
+            <span style="font-size: 0.7rem; color: var(--text-light); font-weight: 600;">TOTAL DEPOSITED EARNINGS</span>
+            <h2 id="earnings-total-revenue" style="font-size: 2rem; font-weight: 800; color: var(--accent-dark); font-family:'Inter'; margin-top: 4px;">₹0.00</h2>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="background: white; border: 1.5px solid var(--border); border-radius: 16px; padding: 12px;">
+              <span style="font-size: 0.65rem; color: var(--text-light); display: block;">TODAY'S PAYOUT</span>
+              <b id="earnings-today-revenue" style="font-size: 1.1rem; color: var(--text); font-family:'Inter';">₹0.00</b>
+            </div>
+            <div style="background: white; border: 1.5px solid var(--border); border-radius: 16px; padding: 12px;">
+              <span style="font-size: 0.65rem; color: var(--text-light); display: block;">TOTAL DELIVERIES</span>
+              <b id="earnings-deliveries-count" style="font-size: 1.1rem; color: var(--text); font-family:'Inter';">0</b>
+            </div>
+          </div>
+
+          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 16px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <b style="display: block; font-size: 0.8rem; color: #1e3a8a;">Daily Target Incentive</b>
+              <span style="font-size: 0.68rem; color: #1e40af;">Complete 10 dispatches for ₹150.00 extra!</span>
+            </div>
+            <span id="earnings-incentive-bonus" style="font-weight: 800; color: #1d4ed8; font-size: 1rem;">₹0</span>
+          </div>
+
+          <!-- Earnings graph projection simulation -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 20px; padding: 1.25rem;">
+            <h5 style="font-weight: 700; font-size: 0.8rem; margin-bottom: 12px; color: var(--text-light);">DISPATCH HISTOGRAM TRACK</h5>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; height: 100px; padding-top: 10px;">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 12%;">
+                <div style="height: 40px; width: 8px; background: var(--accent); border-radius: 4px;"></div>
+                <span style="font-size: 0.55rem; color: var(--text-light);">Mon</span>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 12%;">
+                <div style="height: 25px; width: 8px; background: var(--accent); border-radius: 4px;"></div>
+                <span style="font-size: 0.55rem; color: var(--text-light);">Tue</span>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 12%;">
+                <div style="height: 60px; width: 8px; background: var(--accent); border-radius: 4px;"></div>
+                <span style="font-size: 0.55rem; color: var(--text-light);">Wed</span>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 12%;">
+                <div style="height: 15px; width: 8px; background: var(--accent); border-radius: 4px;"></div>
+                <span style="font-size: 0.55rem; color: var(--text-light);">Thu</span>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 12%;">
+                <div style="height: 80px; width: 8px; background: var(--accent); border-radius: 4px;"></div>
+                <span style="font-size: 0.55rem; color: var(--text-light);">Fri</span>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 12%;">
+                <div style="height: 90px; width: 8px; background: var(--primary); border-radius: 4px;"></div>
+                <span style="font-size: 0.55rem; color: var(--text-light);">Sat</span>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 12%;">
+                <div style="height: 45px; width: 8px; background: var(--accent); border-radius: 4px;"></div>
+                <span style="font-size: 0.55rem; color: var(--text-light);">Sun</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 7: COMPREHENSIVE DELIVERY HISTORY -->
+      <!-- ========================================= -->
+      <div id="view-history" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-clock-rotate-left"></i> Historic <span>Dispatches</span></div>
+          <button class="btn-reset" onclick="showView('dashboard')"><i class="fa-solid fa-house"></i></button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Filter search bar -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 12px; display: flex; align-items: center; padding: 0 10px; height: 44px;">
+            <i class="fa-solid fa-magnifying-glass" style="color: var(--text-light); margin-right: 8px;"></i>
+            <input type="text" placeholder="Search orders, clients, stores..." style="border:none; outline:none; font-size:0.8rem; flex:1;" />
+          </div>
+
+          <!-- History listings list -->
+          <div id="delivery-history-wrapper" style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="text-align: center; color: var(--text-light); font-size: 0.85rem; padding: 2rem 0;">Loading deliveries history...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 8: ATTENDANCE TRACKER -->
+      <!-- ========================================= -->
+      <div id="view-attendance" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-clock"></i> Shift <span>Attendance</span></div>
+          <button class="btn-reset" onclick="showView('dashboard')"><i class="fa-solid fa-house"></i></button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Active Clock Widget -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 20px; padding: 1.5rem; text-align: center; display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 0.72rem; color: var(--text-light); font-weight: 600;">ACTIVE TIME ONLINE</span>
+            <h2 id="attendance-online-hours" style="font-size: 2rem; font-weight: 800; color: var(--accent-dark); font-family:'Inter';">0.0 hrs</h2>
+            <div style="font-size: 0.72rem; color: var(--text-light); margin-top: 4px;">
+              Shift Deliveries Handled: <b id="attendance-shift-deliveries">0</b>
+            </div>
+          </div>
+
+          <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px;">Duty Log Ledger</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="background: white; border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <b style="font-size: 0.8rem; display: block; color: var(--text);">Logged Duty Active</b>
+                <span style="font-size: 0.65rem; color: var(--text-light);">Today's Session</span>
+              </div>
+              <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent-dark); background: var(--accent-light); padding: 4px 8px; border-radius: 6px;">PRESENT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 9: EDIT PROFILE -->
+      <!-- ========================================= -->
+      <div id="view-profile" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-user-circle"></i> Rider <span>Profile</span></div>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 14px;">
+          <!-- Avatar section -->
+          <div style="text-align: center; background: white; border: 1.5px solid var(--border); border-radius: 24px; padding: 1.5rem;">
+            <img id="profile-display-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-light); box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 8px;" alt="Profile Picture" />
+            <h3 id="profile-display-name" style="font-weight: 700; font-size: 1.15rem; color: var(--text);">Rider Partner</h3>
+            <span id="profile-display-vehicle" style="font-size: 0.75rem; color: var(--text-light); font-weight: 600;">E-Scooter (KA-03)</span>
+          </div>
+
+          <!-- Core details -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 20px; padding: 1rem; display: flex; flex-direction: column; gap: 10px; font-size: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted var(--border); padding-bottom: 6px;">
+              <span style="color: var(--text-light); font-weight: 500;">Employment Status</span>
+              <span style="font-weight: 700; color: var(--accent-dark);">DawaDo Certified Partner</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted var(--border); padding-bottom: 6px;">
+              <span style="color: var(--text-light); font-weight: 500;">Incentive Tier</span>
+              <span style="font-weight: 700; color: var(--primary-dark);">Gold Logistics Executive</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-light); font-weight: 500;">Operational Zone</span>
+              <span style="font-weight: 700; color: var(--text);">Bangalore South Hub</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 10: HELP & CUSTOMER SUPPORT -->
+      <!-- ========================================= -->
+      <div id="view-support" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-circle-question"></i> Help <span>Support</span></div>
+          <button class="btn-reset" onclick="showView('dashboard')"><i class="fa-solid fa-house"></i></button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Fast channels -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 20px; padding: 1.25rem; display: flex; flex-direction: column; gap: 10px;">
+            <h5 style="font-weight: 700; font-size: 0.85rem; color: var(--text-light);">IMMEDIATE EMERGENCY SUPPORT</h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button onclick="triggerRiderCallSupport('support')" class="btn" style="background: var(--danger);">
+                <i class="fa-solid fa-headset"></i> Support Hotline
+              </button>
+              <button onclick="triggerRiderCallSupport('store')" class="btn btn-secondary">
+                <i class="fa-solid fa-hospital"></i> Store Helpline
+              </button>
+            </div>
+          </div>
+
+          <!-- FAQ list -->
+          <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px;">Frequently Asked Questions</h4>
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; font-size: 0.75rem;">
+            <div>
+              <b style="color: var(--text); display: block;">How is COD settled?</b>
+              <span style="color: var(--text-light);">Use the 'Settle' menu to clear your outstanding cash buffer through Razorpay payment UPI gateway.</span>
+            </div>
+            <div style="border-top: 1px dotted var(--border); padding-top: 8px;">
+              <b style="color: var(--text); display: block;">What if customer is unavailable?</b>
+              <span style="color: var(--text-light);">Call customer 3 times. If unanswered, trigger a Support Ticket in this screen immediately.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- VIEW 11: SETTINGS VIEW -->
+      <!-- ========================================= -->
+      <div id="view-settings" class="screen-view">
+        <div class="app-header">
+          <div class="header-logo"><i class="fa-solid fa-sliders"></i> Rider <span>Settings</span></div>
+          <button class="btn-reset" onclick="showView('dashboard')"><i class="fa-solid fa-house"></i></button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 14px;">
+          <!-- Notification Switches -->
+          <div style="background: white; border: 1.5px solid var(--border); border-radius: 20px; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;">
+            <h5 style="font-weight: 700; font-size: 0.85rem; color: var(--text-light);">TERMINAL SETTINGS</h5>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted var(--border); padding-bottom: 8px;">
+              <span>Push Notification Audio Alerts</span>
+              <input type="checkbox" checked style="accent-color: var(--primary);" />
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted var(--border); padding-bottom: 8px;">
+              <span>Battery Efficiency Mode</span>
+              <input type="checkbox" style="accent-color: var(--primary);" />
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Language Option</span>
+              <select style="border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 0.75rem;">
+                <option value="en">English</option>
+                <option value="kn">Kannada</option>
+                <option value="hi">Hindi</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- BOTTOM APP NAVIGATION TABS -->
+      <!-- ========================================= -->
+      <nav class="bottom-nav-bar" id="bottom-nav-bar" style="display: none;">
+        <button class="bottom-tab active" id="tab-dashboard" onclick="showView('dashboard')">
+          <i class="fa-solid fa-motorcycle"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="bottom-tab" id="tab-duty" onclick="showView('duty')">
+          <i class="fa-solid fa-compass"></i>
+          <span>Duty Map</span>
+        </button>
+        <button class="bottom-tab" id="tab-settle" onclick="showView('settle')">
+          <i class="fa-solid fa-scale-balanced"></i>
+          <span>Settlements</span>
+        </button>
+        <button class="bottom-tab" id="tab-profile" onclick="showView('profile')">
+          <i class="fa-solid fa-user-circle"></i>
+          <span>Profile</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ES Module Application Orchestrator -->
+    <script type="module" src="/js/delivery_app.js"></script>
+  </body>
+</html>

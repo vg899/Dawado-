@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with personal contact details and address references",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the user (matching auth UID)" },
+        "name": { "type": "string", "description": "Full name of the user" },
+        "email": { "type": "string", "format": "email", "description": "Verified email address" },
+        "phone": { "type": "string", "description": "Contact phone number with prefix" },
+        "lat": { "type": "number", "description": "Last known latitude coordinates" },
+        "lng": { "type": "number", "description": "Last known longitude coordinates" },
+        "savedAddresses": { "type": "array", "description": "List of saved human-readable physical addresses" }
+      },
+      "required": ["id", "name", "email", "phone"]
+    },
+    "Store": {
+      "title": "Pharmacy Store",
+      "description": "Registered pharmacy store details, drug license details, and status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the store" },
+        "name": { "type": "string", "description": "Registered trading name of the pharmacy" },
+        "email": { "type": "string", "format": "email", "description": "Pharmacy contact email" },
+        "lat": { "type": "number", "description": "Latitude coordinate of pharmacy location" },
+        "lng": { "type": "number", "description": "Longitude coordinate of pharmacy location" },
+        "active": { "type": "boolean", "description": "Indicates whether pharmacy is approved and open for business" },
+        "drugLicense": { "type": "string", "description": "Government authorized drug license number" },
+        "gst": { "type": "string", "description": "GSTIN identification number" },
+        "balance": { "type": "number", "description": "Wallet balance eligible for settlement" }
+      },
+      "required": ["id", "name", "email", "lat", "lng", "drugLicense", "gst"]
+    },
+    "DeliveryBoy": {
+      "title": "Rider Partner",
+      "description": "Rider details, vehicle information, location, and cash-on-hand limits",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Rider partner auth UID reference" },
+        "name": { "type": "string", "description": "Rider full name" },
+        "email": { "type": "string", "format": "email", "description": "Rider contact email" },
+        "phone": { "type": "string", "description": "Rider contact phone number" },
+        "vehicleType": { "type": "string", "enum": ["Bike", "Scooter", "Bicycle"], "description": "Mode of logistics transport" },
+        "vehicleNumber": { "type": "string", "description": "Rider vehicle registration number" },
+        "active": { "type": "boolean", "description": "Approved and online rider status" },
+        "cashBalance": { "type": "number", "description": "Cash collected on hand awaiting settlement" },
+        "lat": { "type": "number", "description": "Rider active GPS latitude coordinate" },
+        "lng": { "type": "number", "description": "Rider active GPS longitude coordinate" }
+      },
+      "required": ["id", "name", "email", "phone", "vehicleType", "vehicleNumber"]
+    },
+    "Admin": {
+      "title": "System Supervisor",
+      "description": "Administrative profile managing approvals, logs, and billing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Admin identity match" },
+        "name": { "type": "string", "description": "Supervisor name" },
+        "email": { "type": "string", "format": "email", "description": "Enterprise workspace email" }
+      },
+      "required": ["id", "name", "email"]
+    },
+    "Medicine": {
+      "title": "Medication Item",
+      "description": "Individual medication item catalog with pricing, category, and prescription requirements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique code matching medicine identifier" },
+        "name": { "type": "string", "description": "Trade name of medicine" },
+        "price": { "type": "number", "description": "Price in local currency" },
+        "stock": { "type": "number", "description": "Current inventory item count" },
+        "category": { "type": "string", "description": "Broad category association" },
+        "prescriptionRequired": { "type": "boolean", "description": "Must upload prescription to unlock purchase" }
+      },
+      "required": ["id", "name", "price", "stock", "category"]
+    },
+    "Order": {
+      "title": "Platform Order",
+      "description": "A secure order containing pharmacy, rider, customer links and delivery workflow timelines",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique alphanumeric order ID" },
+        "customerId": { "type": "string", "description": "Associated user ID who placed the order" },
+        "customerName": { "type": "string", "description": "Snapshot of customer name" },
+        "storeId": { "type": "string", "description": "Fulfilling medical store ID reference" },
+        "storeName": { "type": "string", "description": "Snapshot of store name" },
+        "deliveryBoyId": { "type": "string", "description": "Assigned logistics rider reference ID" },
+        "deliveryStatus": { "type": "string", "enum": ["pending", "accepted", "preparing", "dispatched", "picked_up", "delivered", "cancelled"], "description": "Operational tracking state of parcel" },
+        "paymentMethod": { "type": "string", "enum": ["COD", "Online"], "description": "Payment type configured" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "refunded"], "description": "Validated checkout status" },
+        "totalAmount": { "type": "number", "description": "Aggregate invoice total billed to client" },
+        "address": { "type": "string", "description": "Physical destination address text" }
+      },
+      "required": ["id", "customerId", "storeId", "deliveryStatus", "paymentMethod", "paymentStatus", "totalAmount", "address"]
+    },
+    "Settlement": {
+      "title": "Rider Cash Settlement",
+      "description": "Log representing a secure Razorpay settlement transaction paid by rider to lower cash-on-hand liability",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Settlement payment ID reference" },
+        "deliveryBoyId": { "type": "string", "description": "Associated rider reference ID" },
+        "amount": { "type": "number", "description": "Total INR cash balance settled via Razorpay gateway" },
+        "razorpayPaymentId": { "type": "string", "description": "Captured Razorpay gateway transaction hash" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Captured event timestamp" },
+        "status": { "type": "string", "enum": ["completed", "failed", "pending"], "description": "Verification code state" }
+      },
+      "required": ["id", "deliveryBoyId", "amount", "razorpayPaymentId", "timestamp", "status"]
+    },
+    "AuditLog": {
+      "title": "System Audit Log",
+      "description": "Immutable telemetry log capturing critical user, administrative, and payment actions",
+      "type": "object",
+      "properties": {
+        "logId": { "type": "string", "description": "Unique timestamp log hash" },
+        "user": { "type": "string", "description": "Reference email of executing actor" },
+        "role": { "type": "string", "description": "Security group role assignment of actor" },
+        "action": { "type": "string", "description": "Operational method name called" },
+        "module": { "type": "string", "description": "Platform domain component modified" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Captured UTC timestamp" }
+      },
+      "required": ["logId", "user", "role", "action", "module", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile with personal and contact details"
+    },
+    "/stores/{storeId}": {
+      "schema": "Store",
+      "description": "Medical stores catalog and details"
+    },
+    "/delivery_boys/{deliveryBoyId}": {
+      "schema": "DeliveryBoy",
+      "description": "Delivery boy records"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Administrators and supervisors"
+    },
+    "/medicines/{medicineId}": {
+      "schema": "Medicine",
+      "description": "Medication details catalog"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Order records in the platform"
+    },
+    "/settlements/{settlementId}": {
+      "schema": "Settlement",
+      "description": "Rider financial settlement transaction logs"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "System audit logging records"
+    }
+  }
+}
